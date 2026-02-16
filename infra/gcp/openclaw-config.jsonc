@@ -1,0 +1,17 @@
+{
+  // OpenClaw configuration — secret placeholders replaced at boot by startup.sh
+  "gateway": {
+    "bind": "loopback"
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "botToken": "${TELEGRAM_BOT_TOKEN}",
+      "dmPolicy": "pairing",
+      "groupPolicy": "disabled"
+    }
+  },
+  "models": {
+    "default": "claude-sonnet-4-5-20250929"
+  }
+}

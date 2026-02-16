@@ -1,19 +1,19 @@
-.PHONY: setup test lint format run-control-plane deploy
+.PHONY: deploy-openclaw ssh-tunnel openclaw-status
 
-setup:
-	python -m pip install -e ".[dev]"
+# Deploy OpenClaw to GCP Compute Engine
+deploy-openclaw:
+	bash infra/gcp/deploy-openclaw.sh
 
-test:
-	python -m pytest tests/ -v
+# SSH tunnel to access OpenClaw dashboard at http://localhost:18789
+ssh-tunnel:
+	gcloud compute ssh openclaw-vm \
+		--zone=$${GCP_ZONE:-us-central1-a} \
+		--project=$${GCP_PROJECT:?Set GCP_PROJECT} \
+		-- -L 18789:localhost:18789
 
-lint:
-	python -m ruff check .
-
-format:
-	python -m ruff format .
-
-run-control-plane:
-	python -m uvicorn services.control_plane.main:app --reload --port 8080
-
-deploy:
-	bash infra/gcp/deploy.sh
+# Check OpenClaw gateway health
+openclaw-status:
+	gcloud compute ssh openclaw-vm \
+		--zone=$${GCP_ZONE:-us-central1-a} \
+		--project=$${GCP_PROJECT:?Set GCP_PROJECT} \
+		-- openclaw status
