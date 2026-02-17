@@ -117,6 +117,7 @@ ANTHROPIC_API_KEY="$(fetch_secret anthropic-api-key)"
 GMAIL_CREDENTIALS="$(fetch_secret gmail-credentials || true)"
 GITHUB_TOKEN="$(fetch_secret github-token || true)"
 BEEHIIV_API_KEY="$(fetch_secret beehiiv-api-key || true)"
+OPENROUTER_API_KEY="$(fetch_secret openrouter-api-key || true)"
 
 # ── Configure OpenClaw via CLI ────────────────────────────────────
 echo "==> Configuring OpenClaw..."
@@ -126,7 +127,11 @@ openclaw config set channels.telegram.enabled true
 openclaw config set channels.telegram.botToken "${TELEGRAM_BOT_TOKEN}"
 openclaw config set channels.telegram.dmPolicy pairing
 openclaw config set channels.telegram.groupPolicy disabled
-openclaw models set claude-sonnet-4-5-20250929
+
+# Model fallback chain: free OpenRouter model → Claude as paid fallback
+OPENROUTER_API_KEY="${OPENROUTER_API_KEY}" openclaw models set openrouter/qwen/qwen3-vl-30b-a3b-thinking
+openclaw models fallbacks clear
+openclaw models fallbacks add anthropic/claude-sonnet-4-5-20250929
 
 # Generate a gateway auth token for security
 GATEWAY_TOKEN="$(openssl rand -hex 32)"
@@ -145,6 +150,7 @@ Environment=ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 Environment=GMAIL_CREDENTIALS=${GMAIL_CREDENTIALS}
 Environment=GITHUB_TOKEN=${GITHUB_TOKEN}
 Environment=BEEHIIV_API_KEY=${BEEHIIV_API_KEY}
+Environment=OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
 ExecStartPre=/usr/bin/env openclaw security audit --fix
 ExecStart=/usr/bin/env openclaw gateway run --bind loopback
 Restart=on-failure

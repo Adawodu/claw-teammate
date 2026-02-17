@@ -22,6 +22,7 @@ ANTHROPIC_API_KEY="$(fetch_secret anthropic-api-key)"
 GMAIL_CREDENTIALS="$(fetch_secret gmail-credentials || true)"
 GITHUB_TOKEN="$(fetch_secret github-token || true)"
 BEEHIIV_API_KEY="$(fetch_secret beehiiv-api-key || true)"
+OPENROUTER_API_KEY="$(fetch_secret openrouter-api-key || true)"
 
 # ── Write config with real values ────────────────────────────────────
 echo "==> Writing OpenClaw config..."
@@ -35,6 +36,7 @@ export ANTHROPIC_API_KEY
 export GMAIL_CREDENTIALS
 export GITHUB_TOKEN
 export BEEHIIV_API_KEY
+export OPENROUTER_API_KEY
 
 # ── Security audit ───────────────────────────────────────────────────
 echo "==> Running security audit..."
