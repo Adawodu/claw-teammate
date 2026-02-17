@@ -5,7 +5,7 @@
 # Prerequisites:
 #   - gcloud CLI authenticated with appropriate permissions
 #   - Secrets already created in Secret Manager:
-#       telegram-bot-token, anthropic-api-key
+#       telegram-bot-token, anthropic-api-key, openrouter-api-key
 #       (gmail-credentials, github-token, beehiiv-api-key as needed)
 #
 # Usage:
@@ -34,13 +34,15 @@ gcloud services enable \
 
 # ── Service account ──────────────────────────────────────────────────
 echo "==> Setting up service account..."
-gcloud iam service-accounts describe "${SA_EMAIL}" --project="${PROJECT}" 2>/dev/null \
-|| gcloud iam service-accounts create "${SA_NAME}" \
-  --display-name="OpenClaw SA" \
-  --project="${PROJECT}"
-
-# Brief pause to allow IAM propagation after SA creation
-sleep 10
+if gcloud iam service-accounts describe "${SA_EMAIL}" --project="${PROJECT}" 2>/dev/null; then
+  echo "Service account already exists"
+else
+  gcloud iam service-accounts create "${SA_NAME}" \
+    --display-name="OpenClaw SA" \
+    --project="${PROJECT}"
+  # Brief pause to allow IAM propagation after SA creation
+  sleep 10
+fi
 
 gcloud projects add-iam-policy-binding "${PROJECT}" \
   --member="serviceAccount:${SA_EMAIL}" \
@@ -87,7 +89,7 @@ set -euo pipefail
 
 OPENCLAW_DIR="/opt/openclaw"
 CONFIG_FILE="${OPENCLAW_DIR}/config.jsonc"
-MARKER="/var/run/openclaw-installed"
+MARKER="/opt/openclaw/.installed"
 
 # ── Install Node 22 + OpenClaw (first boot only) ──────────────────
 if [ ! -f "${MARKER}" ]; then
@@ -124,7 +126,7 @@ echo "==> Configuring OpenClaw..."
 openclaw config set gateway.bind loopback
 openclaw config set gateway.mode local
 openclaw config set channels.telegram.enabled true
-openclaw config set channels.telegram.botToken "${TELEGRAM_BOT_TOKEN}"
+openclaw config set channels.telegram.botToken "${TELEGRAM_BOT_TOKEN}" > /dev/null 2>&1
 openclaw config set channels.telegram.dmPolicy pairing
 openclaw config set channels.telegram.groupPolicy disabled
 
@@ -133,9 +135,22 @@ OPENROUTER_API_KEY="${OPENROUTER_API_KEY}" openclaw models set openrouter/qwen/q
 openclaw models fallbacks clear
 openclaw models fallbacks add anthropic/claude-sonnet-4-5-20250929
 
-# Generate a gateway auth token for security
-GATEWAY_TOKEN="$(openssl rand -hex 32)"
-openclaw config set gateway.auth.token "${GATEWAY_TOKEN}"
+# Generate a gateway auth token on first run only
+EXISTING_TOKEN="$(openclaw config get gateway.auth.token 2>/dev/null || true)"
+if [ -z "${EXISTING_TOKEN}" ] || echo "${EXISTING_TOKEN}" | grep -q "not found"; then
+  GATEWAY_TOKEN="$(openssl rand -hex 32)"
+  openclaw config set gateway.auth.token "${GATEWAY_TOKEN}" > /dev/null 2>&1
+fi
+
+# ── Environment file (secrets not visible in unit file) ──────────
+cat > /etc/openclaw.env <<ENVFILE
+ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+GMAIL_CREDENTIALS=${GMAIL_CREDENTIALS}
+GITHUB_TOKEN=${GITHUB_TOKEN}
+BEEHIIV_API_KEY=${BEEHIIV_API_KEY}
+OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+ENVFILE
+chmod 600 /etc/openclaw.env
 
 # ── Systemd unit ──────────────────────────────────────────────────
 cat > /etc/systemd/system/openclaw.service <<UNIT
@@ -146,11 +161,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-Environment=ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-Environment=GMAIL_CREDENTIALS=${GMAIL_CREDENTIALS}
-Environment=GITHUB_TOKEN=${GITHUB_TOKEN}
-Environment=BEEHIIV_API_KEY=${BEEHIIV_API_KEY}
-Environment=OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+EnvironmentFile=/etc/openclaw.env
 ExecStartPre=/usr/bin/env openclaw security audit --fix
 ExecStart=/usr/bin/env openclaw gateway run --bind loopback
 Restart=on-failure

@@ -44,4 +44,4 @@ openclaw security audit --fix || true
 
 # ── Start gateway ────────────────────────────────────────────────────
 echo "==> Starting OpenClaw gateway..."
-exec openclaw gateway --config "${CONFIG_FILE}"
+exec openclaw gateway run --bind loopback
