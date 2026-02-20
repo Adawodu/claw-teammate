@@ -1,0 +1,12 @@
+{
+  "id": "video-gen",
+  "name": "Video Generation",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "geminiApiKey": { "type": "string" },
+      "openaiApiKey": { "type": "string" }
+    },
+    "required": ["geminiApiKey"]
+  }
+}

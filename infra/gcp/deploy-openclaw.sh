@@ -186,90 +186,129 @@ systemctl restart openclaw
 echo "==> OpenClaw gateway started"
 STARTUP_EOF
 
-# ── Install Convex Knowledge plugin on VM via SSH + SCP ──────────────
+# ── Install plugin files on VM (copy + npm install, no config) ────────
+# Each function copies files and installs deps. Config is set atomically
+# by configure_all_plugins() after all plugins are installed — this avoids
+# the "openclaw config set" global validation failure that occurs when any
+# plugin has missing config.
+
 install_convex_plugin() {
   local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/convex-knowledge"
   local PLUGIN_DEST="/root/.openclaw/extensions/convex-knowledge"
 
-  echo "==> Creating plugin directory on VM..."
+  echo "==> Installing Convex Knowledge plugin files..."
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo mkdir -p ${PLUGIN_DEST}"
-
-  echo "==> Copying plugin files to VM..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "mkdir -p /tmp/convex-knowledge-plugin"
+    -- "sudo mkdir -p ${PLUGIN_DEST} && mkdir -p /tmp/convex-knowledge-plugin"
   gcloud compute scp \
     "${PLUGIN_SRC}/package.json" \
     "${PLUGIN_SRC}/index.ts" \
     "${PLUGIN_SRC}/openclaw.plugin.json" \
     "${VM_NAME}:/tmp/convex-knowledge-plugin/" \
     --zone="${ZONE}" --project="${PROJECT}"
-
-  echo "==> Installing plugin dependencies and enabling..."
-  CONVEX_URL="$(gcloud secrets versions access latest --secret=convex-url --project="${PROJECT}")"
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo cp /tmp/convex-knowledge-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev && openclaw plugins enable convex-knowledge && openclaw config set plugins.entries.convex-knowledge.config.convexUrl \"${CONVEX_URL}\" && systemctl restart openclaw'"
+    -- "sudo cp /tmp/convex-knowledge-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
 }
 
-# ── Install Postiz plugin on VM via SSH + SCP ─────────────────────────
 install_postiz_plugin() {
   local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/postiz"
   local PLUGIN_DEST="/root/.openclaw/extensions/postiz"
 
-  echo "==> Creating Postiz plugin directory on VM..."
+  echo "==> Installing Postiz plugin files..."
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo mkdir -p ${PLUGIN_DEST}"
-
-  echo "==> Copying Postiz plugin files to VM..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "mkdir -p /tmp/postiz-plugin"
+    -- "sudo mkdir -p ${PLUGIN_DEST} && mkdir -p /tmp/postiz-plugin"
   gcloud compute scp \
     "${PLUGIN_SRC}/package.json" \
     "${PLUGIN_SRC}/index.ts" \
     "${PLUGIN_SRC}/openclaw.plugin.json" \
     "${VM_NAME}:/tmp/postiz-plugin/" \
     --zone="${ZONE}" --project="${PROJECT}"
-
-  echo "==> Installing Postiz plugin dependencies and enabling..."
-  POSTIZ_URL="$(gcloud secrets versions access latest --secret=postiz-url --project="${PROJECT}")"
-  POSTIZ_API_KEY="$(gcloud secrets versions access latest --secret=postiz-api-key --project="${PROJECT}")"
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo cp /tmp/postiz-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev && openclaw plugins enable postiz && openclaw config set plugins.entries.postiz.config.postizUrl \"${POSTIZ_URL}\" && openclaw config set plugins.entries.postiz.config.postizApiKey \"${POSTIZ_API_KEY}\" && systemctl restart openclaw'"
+    -- "sudo cp /tmp/postiz-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
 }
 
-# ── Install Beehiiv plugin on VM via SSH + SCP ───────────────────────────
 install_beehiiv_plugin() {
   local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/beehiiv"
   local PLUGIN_DEST="/root/.openclaw/extensions/beehiiv"
 
-  echo "==> Creating Beehiiv plugin directory on VM..."
+  echo "==> Installing Beehiiv plugin files..."
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo mkdir -p ${PLUGIN_DEST}"
-
-  echo "==> Copying Beehiiv plugin files to VM..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "mkdir -p /tmp/beehiiv-plugin"
+    -- "sudo mkdir -p ${PLUGIN_DEST} && mkdir -p /tmp/beehiiv-plugin"
   gcloud compute scp \
     "${PLUGIN_SRC}/package.json" \
     "${PLUGIN_SRC}/index.ts" \
     "${PLUGIN_SRC}/openclaw.plugin.json" \
     "${VM_NAME}:/tmp/beehiiv-plugin/" \
     --zone="${ZONE}" --project="${PROJECT}"
-
-  echo "==> Installing Beehiiv plugin dependencies and enabling..."
-  BEEHIIV_API_KEY="$(gcloud secrets versions access latest --secret=beehiiv-api-key --project="${PROJECT}")"
-  BEEHIIV_PUB_ID="$(gcloud secrets versions access latest --secret=beehiiv-publication-id --project="${PROJECT}")"
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo cp /tmp/beehiiv-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev && openclaw plugins enable beehiiv && openclaw config set plugins.entries.beehiiv.config.beehiivApiKey \"${BEEHIIV_API_KEY}\" && openclaw config set plugins.entries.beehiiv.config.beehiivPublicationId \"${BEEHIIV_PUB_ID}\" && systemctl restart openclaw'"
+    -- "sudo cp /tmp/beehiiv-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
+}
+
+install_video_gen_plugin() {
+  local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/video-gen"
+  local PLUGIN_DEST="/root/.openclaw/extensions/video-gen"
+
+  echo "==> Installing Video Gen plugin files..."
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo mkdir -p ${PLUGIN_DEST} && mkdir -p /tmp/video-gen-plugin"
+  gcloud compute scp \
+    "${PLUGIN_SRC}/package.json" \
+    "${PLUGIN_SRC}/index.ts" \
+    "${PLUGIN_SRC}/openclaw.plugin.json" \
+    "${VM_NAME}:/tmp/video-gen-plugin/" \
+    --zone="${ZONE}" --project="${PROJECT}"
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo cp /tmp/video-gen-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
+}
+
+# ── Configure all plugins atomically ─────────────────────────────────
+# Fetches all secrets, then patches openclaw.json with plugin entries in
+# one shot. This avoids the global validation issue with `openclaw config set`.
+configure_all_plugins() {
+  echo "==> Fetching plugin secrets..."
+  local CONVEX_URL POSTIZ_URL POSTIZ_API_KEY BEEHIIV_API_KEY BEEHIIV_PUB_ID GOOGLE_AI_API_KEY OPENAI_API_KEY
+  CONVEX_URL="$(gcloud secrets versions access latest --secret=convex-url --project="${PROJECT}")"
+  POSTIZ_URL="$(gcloud secrets versions access latest --secret=postiz-url --project="${PROJECT}")"
+  POSTIZ_API_KEY="$(gcloud secrets versions access latest --secret=postiz-api-key --project="${PROJECT}")"
+  BEEHIIV_API_KEY="$(gcloud secrets versions access latest --secret=beehiiv-api-key --project="${PROJECT}")"
+  BEEHIIV_PUB_ID="$(gcloud secrets versions access latest --secret=beehiiv-publication-id --project="${PROJECT}")"
+  GOOGLE_AI_API_KEY="$(gcloud secrets versions access latest --secret=google-ai-api-key --project="${PROJECT}")"
+  OPENAI_API_KEY="$(gcloud secrets versions access latest --secret=openai-api-key --project="${PROJECT}" || true)"
+
+  echo "==> Patching openclaw.json with plugin configs..."
+  # Build a node script that reads current config and merges plugin entries
+  local PATCH_SCRIPT
+  PATCH_SCRIPT=$(cat <<'NODESCRIPT'
+const fs = require("fs");
+const configPath = "/root/.openclaw/openclaw.json";
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+config.plugins = config.plugins || {};
+config.plugins.entries = Object.assign(config.plugins.entries || {}, {
+  "convex-knowledge": { enabled: true, config: { convexUrl: process.env.CONVEX_URL } },
+  "postiz": { enabled: true, config: { postizUrl: process.env.POSTIZ_URL, postizApiKey: process.env.POSTIZ_API_KEY } },
+  "beehiiv": { enabled: true, config: { beehiivApiKey: process.env.BEEHIIV_API_KEY, beehiivPublicationId: process.env.BEEHIIV_PUB_ID } },
+  "video-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY } }
+});
+fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+console.log("Plugin configs written successfully");
+NODESCRIPT
+)
+
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo CONVEX_URL='${CONVEX_URL}' POSTIZ_URL='${POSTIZ_URL}' POSTIZ_API_KEY='${POSTIZ_API_KEY}' BEEHIIV_API_KEY='${BEEHIIV_API_KEY}' BEEHIIV_PUB_ID='${BEEHIIV_PUB_ID}' GOOGLE_AI_API_KEY='${GOOGLE_AI_API_KEY}' OPENAI_API_KEY='${OPENAI_API_KEY}' node -e '${PATCH_SCRIPT}'"
+
+  echo "==> Restarting OpenClaw..."
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo systemctl restart openclaw"
 }
 
 # ── Install all skills on VM via single tar + SCP + SSH ──────────────
@@ -332,6 +371,8 @@ sleep 90
 install_convex_plugin
 install_postiz_plugin
 install_beehiiv_plugin
+install_video_gen_plugin
+configure_all_plugins
 install_skills
 
 echo ""
