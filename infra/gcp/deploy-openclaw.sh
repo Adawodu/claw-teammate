@@ -121,7 +121,7 @@ GMAIL_CREDENTIALS="$(fetch_secret gmail-credentials || true)"
 GITHUB_TOKEN="$(fetch_secret github-token || true)"
 BEEHIIV_API_KEY="$(fetch_secret beehiiv-api-key || true)"
 BEEHIIV_PUBLICATION_ID="$(fetch_secret beehiiv-publication-id || true)"
-GOOGLE_AI_API_KEY="$(fetch_secret google-ai-api-key)"
+GOOGLE_AI_API_KEY="$(fetch_secret google-ai-api-key)"  # Required — primary model
 OPENAI_API_KEY="$(fetch_secret openai-api-key || true)"
 CONVEX_URL="$(fetch_secret convex-url || true)"
 
@@ -185,8 +185,8 @@ systemctl restart openclaw
 echo "==> OpenClaw gateway started"
 STARTUP_EOF
 
-# ── Install plugin on VM via SSH + SCP ───────────────────────────────
-install_plugin() {
+# ── Install Convex Knowledge plugin on VM via SSH + SCP ──────────────
+install_convex_plugin() {
   local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/convex-knowledge"
   local PLUGIN_DEST="/root/.openclaw/extensions/convex-knowledge"
 
@@ -271,140 +271,36 @@ install_beehiiv_plugin() {
     -- "sudo cp /tmp/beehiiv-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev && openclaw plugins enable beehiiv --config \"beehiivApiKey=${BEEHIIV_API_KEY}\" --config \"beehiivPublicationId=${BEEHIIV_PUB_ID}\" && systemctl restart openclaw'"
 }
 
-# ── Install skills on VM via SSH + SCP ────────────────────────────────
+# ── Install all skills on VM via single tar + SCP + SSH ──────────────
 install_skills() {
-  # ── daily-briefing ──
-  local SKILL_SRC="${SCRIPT_DIR}/../../skills/daily-briefing"
-  local SKILL_DEST="/root/.openclaw/skills/daily-briefing"
+  local SKILLS_ROOT="${SCRIPT_DIR}/../../skills"
+  local SKILLS_DEST="/root/.openclaw/skills"
 
-  echo "==> Creating skill directory on VM..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo mkdir -p ${SKILL_DEST}"
+  echo "==> Bundling skills into tarball..."
+  local TARBALL="$(mktemp /tmp/skills-XXXXXX.tar.gz)"
+  tar -czf "${TARBALL}" -C "${SKILLS_ROOT}" \
+    daily-briefing/SKILL.md \
+    job-hunter/SKILL.md \
+    content-engine/SKILL.md \
+    daily-posts/SKILL.md \
+    newsletter-writer/SKILL.md \
+    engagement-monitor/SKILL.md
 
-  echo "==> Copying daily-briefing skill to VM..."
-  gcloud compute scp \
-    "${SKILL_SRC}/SKILL.md" \
-    "${VM_NAME}:/tmp/daily-briefing-skill.md" \
+  echo "==> Copying skills tarball to VM..."
+  gcloud compute scp "${TARBALL}" \
+    "${VM_NAME}:/tmp/skills.tar.gz" \
     --zone="${ZONE}" --project="${PROJECT}"
+  rm -f "${TARBALL}"
+
+  echo "==> Extracting skills and registering cron jobs..."
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo cp /tmp/daily-briefing-skill.md ${SKILL_DEST}/SKILL.md"
-
-  echo "==> Registering daily-briefing cron job..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo openclaw cron add --name 'daily-briefing' --cron '0 13 * * *' --message '/daily-briefing' || echo 'Cron job may already exist'"
-
-  # ── job-hunter ──
-  local JH_SRC="${SCRIPT_DIR}/../../skills/job-hunter"
-  local JH_DEST="/root/.openclaw/skills/job-hunter"
-
-  echo "==> Creating job-hunter skill directory on VM..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo mkdir -p ${JH_DEST}"
-
-  echo "==> Copying job-hunter skill to VM..."
-  gcloud compute scp \
-    "${JH_SRC}/SKILL.md" \
-    "${VM_NAME}:/tmp/job-hunter-skill.md" \
-    --zone="${ZONE}" --project="${PROJECT}"
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo cp /tmp/job-hunter-skill.md ${JH_DEST}/SKILL.md"
-
-  # ── content-engine ──
-  local CE_SRC="${SCRIPT_DIR}/../../skills/content-engine"
-  local CE_DEST="/root/.openclaw/skills/content-engine"
-
-  echo "==> Creating content-engine skill directory on VM..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo mkdir -p ${CE_DEST}"
-
-  echo "==> Copying content-engine skill to VM..."
-  gcloud compute scp \
-    "${CE_SRC}/SKILL.md" \
-    "${VM_NAME}:/tmp/content-engine-skill.md" \
-    --zone="${ZONE}" --project="${PROJECT}"
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo cp /tmp/content-engine-skill.md ${CE_DEST}/SKILL.md"
-
-  echo "==> Registering content-engine cron job..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo openclaw cron add --name 'content-engine' --cron '0 1 * * 1' --message '/content-engine' || echo 'Cron job may already exist'"
-
-  # ── daily-posts ──
-  local DP_SRC="${SCRIPT_DIR}/../../skills/daily-posts"
-  local DP_DEST="/root/.openclaw/skills/daily-posts"
-
-  echo "==> Creating daily-posts skill directory on VM..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo mkdir -p ${DP_DEST}"
-
-  echo "==> Copying daily-posts skill to VM..."
-  gcloud compute scp \
-    "${DP_SRC}/SKILL.md" \
-    "${VM_NAME}:/tmp/daily-posts-skill.md" \
-    --zone="${ZONE}" --project="${PROJECT}"
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo cp /tmp/daily-posts-skill.md ${DP_DEST}/SKILL.md"
-
-  echo "==> Registering daily-posts cron job..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo openclaw cron add --name 'daily-posts' --cron '0 13 * * *' --message '/daily-posts' || echo 'Cron job may already exist'"
-
-  # ── newsletter-writer ──
-  local NW_SRC="${SCRIPT_DIR}/../../skills/newsletter-writer"
-  local NW_DEST="/root/.openclaw/skills/newsletter-writer"
-
-  echo "==> Creating newsletter-writer skill directory on VM..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo mkdir -p ${NW_DEST}"
-
-  echo "==> Copying newsletter-writer skill to VM..."
-  gcloud compute scp \
-    "${NW_SRC}/SKILL.md" \
-    "${VM_NAME}:/tmp/newsletter-writer-skill.md" \
-    --zone="${ZONE}" --project="${PROJECT}"
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo cp /tmp/newsletter-writer-skill.md ${NW_DEST}/SKILL.md"
-
-  echo "==> Registering newsletter-writer cron job..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo openclaw cron add --name 'newsletter-writer' --cron '0 14 * * 2' --message '/newsletter-writer' || echo 'Cron job may already exist'"
-
-  # ── engagement-monitor ──
-  local EM_SRC="${SCRIPT_DIR}/../../skills/engagement-monitor"
-  local EM_DEST="/root/.openclaw/skills/engagement-monitor"
-
-  echo "==> Creating engagement-monitor skill directory on VM..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo mkdir -p ${EM_DEST}"
-
-  echo "==> Copying engagement-monitor skill to VM..."
-  gcloud compute scp \
-    "${EM_SRC}/SKILL.md" \
-    "${VM_NAME}:/tmp/engagement-monitor-skill.md" \
-    --zone="${ZONE}" --project="${PROJECT}"
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo cp /tmp/engagement-monitor-skill.md ${EM_DEST}/SKILL.md"
-
-  echo "==> Registering engagement-monitor cron job..."
-  gcloud compute ssh "${VM_NAME}" \
-    --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo openclaw cron add --name 'engagement-monitor' --cron '0 18 * * 5' --message '/engagement-monitor' || echo 'Cron job may already exist'"
+    -- "sudo mkdir -p ${SKILLS_DEST} && sudo tar -xzf /tmp/skills.tar.gz -C ${SKILLS_DEST} && rm -f /tmp/skills.tar.gz && \
+sudo openclaw cron add --name 'daily-briefing' --cron '0 13 * * *' --message '/daily-briefing' || echo 'Cron may exist'; \
+sudo openclaw cron add --name 'content-engine' --cron '0 1 * * 1' --message '/content-engine' || echo 'Cron may exist'; \
+sudo openclaw cron add --name 'daily-posts' --cron '0 13 * * *' --message '/daily-posts' || echo 'Cron may exist'; \
+sudo openclaw cron add --name 'newsletter-writer' --cron '0 14 * * 2' --message '/newsletter-writer' || echo 'Cron may exist'; \
+sudo openclaw cron add --name 'engagement-monitor' --cron '0 18 * * 5' --message '/engagement-monitor' || echo 'Cron may exist'"
 }
 
 # ── Create or reset VM ───────────────────────────────────────────────
@@ -432,7 +328,7 @@ gcloud compute instances describe "${VM_NAME}" \
 # Wait for startup script to finish, then install plugin
 echo "==> Waiting for VM startup script to complete..."
 sleep 90
-install_plugin
+install_convex_plugin
 install_postiz_plugin
 install_beehiiv_plugin
 install_skills

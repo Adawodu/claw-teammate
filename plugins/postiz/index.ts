@@ -35,7 +35,7 @@ const postizPlugin = {
       const options: RequestInit = {
         method,
         headers: {
-          Authorization: postizApiKey,
+          Authorization: `Bearer ${postizApiKey}`,
           "Content-Type": "application/json",
         },
       };

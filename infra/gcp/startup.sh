@@ -18,7 +18,7 @@ echo "==> Fetching secrets from Secret Manager..."
 TELEGRAM_BOT_TOKEN="$(fetch_secret telegram-bot-token)"
 ANTHROPIC_API_KEY="$(fetch_secret anthropic-api-key)"
 
-GOOGLE_AI_API_KEY="$(fetch_secret google-ai-api-key)"
+GOOGLE_AI_API_KEY="$(fetch_secret google-ai-api-key)"  # Required — primary model
 
 # Optional secrets — leave empty if not yet created
 GMAIL_CREDENTIALS="$(fetch_secret gmail-credentials || true)"

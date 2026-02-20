@@ -1,90 +1,29 @@
-# Welcome to your Convex functions directory!
+# Convex Functions
 
-Write your Convex functions here.
-See https://docs.convex.dev/functions for more.
+Backend functions for the claw-teammate cost tracking dashboard and knowledge base.
 
-A query function that takes two arguments looks like:
+## Modules
 
-```ts
-// convex/myFunctions.ts
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+### `costs.ts` / `costActions.ts`
+Cost tracking for API usage across providers.
+- `fetchAndStoreCosts` — action that pulls usage data from OpenRouter and OpenAI APIs, stores per-model activity and snapshots
+- `upsertActivity` — mutation to insert/update daily per-model usage records
+- `storeSnapshot` — mutation to store a point-in-time cost summary
 
-export const myQueryFunction = query({
-  // Validators for arguments.
-  args: {
-    first: v.number(),
-    second: v.string(),
-  },
+### `knowledgeActions.ts`
+Knowledge base with semantic search (used by the convex-knowledge plugin).
+- `ingest` — action to store text with tags and generate embeddings
+- `search` — action to perform semantic similarity search
 
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Read the database as many times as you need here.
-    // See https://docs.convex.dev/database/reading-data.
-    const documents = await ctx.db.query("tablename").collect();
+## Local Development
 
-    // Arguments passed from the client are properties of the args object.
-    console.log(args.first, args.second);
-
-    // Write arbitrary JavaScript here: filter, aggregate, build derived data,
-    // remove non-public properties, or create new objects.
-    return documents;
-  },
-});
+```bash
+npx convex dev          # Start dev server + hot reload
+npx convex dashboard    # Open the Convex dashboard
 ```
 
-Using this query function in a React component looks like:
+## Environment Variables
 
-```ts
-const data = useQuery(api.myFunctions.myQueryFunction, {
-  first: 10,
-  second: "hello",
-});
-```
-
-A mutation function looks like:
-
-```ts
-// convex/myFunctions.ts
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
-
-export const myMutationFunction = mutation({
-  // Validators for arguments.
-  args: {
-    first: v.string(),
-    second: v.string(),
-  },
-
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Insert or modify documents in the database here.
-    // Mutations can also read from the database like queries.
-    // See https://docs.convex.dev/database/writing-data.
-    const message = { body: args.first, author: args.second };
-    const id = await ctx.db.insert("messages", message);
-
-    // Optionally, return a value from your mutation.
-    return await ctx.db.get("messages", id);
-  },
-});
-```
-
-Using this mutation function in a React component looks like:
-
-```ts
-const mutation = useMutation(api.myFunctions.myMutationFunction);
-function handleButtonPress() {
-  // fire and forget, the most common way to use mutations
-  mutation({ first: "Hello!", second: "me" });
-  // OR
-  // use the result once the mutation has completed
-  mutation({ first: "Hello!", second: "me" }).then((result) =>
-    console.log(result),
-  );
-}
-```
-
-Use the Convex CLI to push your functions to a deployment. See everything
-the Convex CLI can do by running `npx convex -h` in your project root
-directory. To learn more, launch the docs with `npx convex docs`.
+Set these in the Convex dashboard under Settings > Environment Variables:
+- `OPENROUTER_MGMT_KEY` — OpenRouter management API key (for cost tracking)
+- `OPENAI_ADMIN_KEY` — OpenAI admin API key (for cost tracking)

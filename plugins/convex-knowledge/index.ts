@@ -25,6 +25,8 @@ const convexKnowledgePlugin = {
       return;
     }
 
+    // Uses Convex HTTP API directly to avoid the convex SDK dependency in plugins.
+    // See: https://docs.convex.dev/http-api
     async function callConvexAction(name: string, args: Record<string, any>) {
       const url = `${convexUrl}/api/action`;
       const response = await fetch(url, {

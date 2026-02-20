@@ -14,7 +14,7 @@ export const fetchAndStoreCosts = action({
     let openaiCostToday = 0;
     let openaiCostMtd = 0;
 
-    // --- OpenRouter Credits ---
+    // --- OpenRouter Credits (retained for cost monitoring even though models moved to direct APIs) ---
     const orMgmtKey = process.env.OPENROUTER_MGMT_KEY;
     if (orMgmtKey) {
       try {
