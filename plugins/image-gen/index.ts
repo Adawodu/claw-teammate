@@ -76,37 +76,21 @@ async function dalleGenerate(
   return res.json();
 }
 
-// ── Google Drive helpers ──────────────────────────────────────────────
-async function getDriveAccessToken(serviceAccountKey: string): Promise<string> {
-  const key = JSON.parse(serviceAccountKey);
-  const now = Math.floor(Date.now() / 1000);
-  const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const payload = btoa(
-    JSON.stringify({
-      iss: key.client_email,
-      scope: "https://www.googleapis.com/auth/drive.file",
-      aud: "https://oauth2.googleapis.com/token",
-      iat: now,
-      exp: now + 3600,
-    }),
-  );
-
-  // Sign JWT with the service account private key
-  const crypto = await import("crypto");
-  const signer = crypto.createSign("RSA-SHA256");
-  signer.update(`${header}.${payload}`);
-  const signature = signer
-    .sign(key.private_key, "base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-
-  const jwt = `${header}.${payload}.${signature}`;
-
+// ── Google Drive helpers (OAuth2 refresh token) ───────────────────────
+async function getDriveAccessToken(
+  clientId: string,
+  clientSecret: string,
+  refreshToken: string,
+): Promise<string> {
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }).toString(),
   });
   if (!tokenRes.ok) {
     const text = await tokenRes.text();
@@ -184,7 +168,9 @@ async function uploadToDrive(
 async function persistMedia(opts: {
   convexUrl?: string;
   driveFolderId?: string;
-  driveServiceAccountKey?: string;
+  driveClientId?: string;
+  driveClientSecret?: string;
+  driveRefreshToken?: string;
   base64Data?: string;
   sourceUrl?: string;
   mimeType: string;
@@ -220,25 +206,27 @@ async function persistMedia(opts: {
       }
 
       const convexRes = await fetch(
-        `${opts.convexUrl}/api/action/${actionName}`,
+        `${opts.convexUrl}/api/action`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ args: body }),
+          body: JSON.stringify({ path: actionName, args: body }),
         },
       );
       if (convexRes.ok) {
         const data = await convexRes.json();
         result.convexUrl = data.value?.url;
+      } else {
+        const text = await convexRes.text();
+        console.error(`Convex action failed ${convexRes.status}: ${text}`);
       }
     } catch (err) {
-      // Non-fatal: log but continue
       console.error("Convex storage failed:", err);
     }
   }
 
-  // Upload to Google Drive
-  if (opts.driveFolderId && opts.driveServiceAccountKey) {
+  // Upload to Google Drive (OAuth2 refresh token)
+  if (opts.driveFolderId && opts.driveClientId && opts.driveClientSecret && opts.driveRefreshToken) {
     try {
       let imageBuffer: ArrayBuffer;
       if (opts.base64Data) {
@@ -251,7 +239,9 @@ async function persistMedia(opts: {
       }
 
       const accessToken = await getDriveAccessToken(
-        opts.driveServiceAccountKey,
+        opts.driveClientId,
+        opts.driveClientSecret,
+        opts.driveRefreshToken,
       );
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const ext = opts.mimeType.includes("png") ? "png" : "jpg";
@@ -286,7 +276,9 @@ const imageGenPlugin = {
       openaiApiKey: { type: "string" as const },
       convexUrl: { type: "string" as const },
       driveFolderId: { type: "string" as const },
-      driveServiceAccountKey: { type: "string" as const },
+      driveClientId: { type: "string" as const },
+      driveClientSecret: { type: "string" as const },
+      driveRefreshToken: { type: "string" as const },
     },
     required: ["geminiApiKey"],
   },
@@ -295,8 +287,9 @@ const imageGenPlugin = {
     const openaiApiKey = pluginApi.pluginConfig?.openaiApiKey;
     const convexUrl = pluginApi.pluginConfig?.convexUrl;
     const driveFolderId = pluginApi.pluginConfig?.driveFolderId;
-    const driveServiceAccountKey =
-      pluginApi.pluginConfig?.driveServiceAccountKey;
+    const driveClientId = pluginApi.pluginConfig?.driveClientId;
+    const driveClientSecret = pluginApi.pluginConfig?.driveClientSecret;
+    const driveRefreshToken = pluginApi.pluginConfig?.driveRefreshToken;
 
     if (!geminiApiKey) {
       pluginApi.logger?.warn?.("geminiApiKey not configured for image-gen");
@@ -351,7 +344,9 @@ const imageGenPlugin = {
             const stored = await persistMedia({
               convexUrl,
               driveFolderId,
-              driveServiceAccountKey,
+              driveClientId,
+              driveClientSecret,
+              driveRefreshToken,
               sourceUrl: image?.url,
               mimeType: "image/png",
               prompt: params.prompt,
@@ -392,7 +387,9 @@ const imageGenPlugin = {
           const stored = await persistMedia({
             convexUrl,
             driveFolderId,
-            driveServiceAccountKey,
+            driveClientId,
+            driveClientSecret,
+            driveRefreshToken,
             base64Data: prediction.bytesBase64Encoded,
             mimeType: prediction.mimeType || "image/jpeg",
             prompt: params.prompt,
@@ -449,11 +446,11 @@ const imageGenPlugin = {
             if (params.limit) queryArgs.limit = params.limit;
 
             const res = await fetch(
-              `${convexUrl}/api/query/media:list`,
+              `${convexUrl}/api/query`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ args: queryArgs }),
+                body: JSON.stringify({ path: "media:list", args: queryArgs }),
               },
             );
             if (!res.ok) {

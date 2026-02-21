@@ -293,7 +293,7 @@ install_image_gen_plugin() {
 # one shot. This avoids the global validation issue with `openclaw config set`.
 configure_all_plugins() {
   echo "==> Fetching plugin secrets..."
-  local CONVEX_URL POSTIZ_URL POSTIZ_API_KEY BEEHIIV_API_KEY BEEHIIV_PUB_ID GOOGLE_AI_API_KEY OPENAI_API_KEY DRIVE_FOLDER_ID DRIVE_SA_KEY
+  local CONVEX_URL POSTIZ_URL POSTIZ_API_KEY BEEHIIV_API_KEY BEEHIIV_PUB_ID GOOGLE_AI_API_KEY OPENAI_API_KEY DRIVE_FOLDER_ID DRIVE_CLIENT_ID DRIVE_CLIENT_SECRET DRIVE_REFRESH_TOKEN
   CONVEX_URL="$(gcloud secrets versions access latest --secret=convex-url --project="${PROJECT}")"
   POSTIZ_URL="$(gcloud secrets versions access latest --secret=postiz-url --project="${PROJECT}")"
   POSTIZ_API_KEY="$(gcloud secrets versions access latest --secret=postiz-api-key --project="${PROJECT}")"
@@ -302,7 +302,9 @@ configure_all_plugins() {
   GOOGLE_AI_API_KEY="$(gcloud secrets versions access latest --secret=google-ai-api-key --project="${PROJECT}")"
   OPENAI_API_KEY="$(gcloud secrets versions access latest --secret=openai-api-key --project="${PROJECT}" || true)"
   DRIVE_FOLDER_ID="$(gcloud secrets versions access latest --secret=drive-media-folder-id --project="${PROJECT}" || true)"
-  DRIVE_SA_KEY="$(gcloud secrets versions access latest --secret=drive-service-account-key --project="${PROJECT}" || true)"
+  DRIVE_CLIENT_ID="$(gcloud secrets versions access latest --secret=drive-oauth-client-id --project="${PROJECT}" || true)"
+  DRIVE_CLIENT_SECRET="$(gcloud secrets versions access latest --secret=drive-oauth-client-secret --project="${PROJECT}" || true)"
+  DRIVE_REFRESH_TOKEN="$(gcloud secrets versions access latest --secret=drive-oauth-refresh-token --project="${PROJECT}" || true)"
 
   echo "==> Patching openclaw.json with plugin configs..."
   # Build a node script that reads current config and merges plugin entries
@@ -316,8 +318,8 @@ config.plugins.entries = Object.assign(config.plugins.entries || {}, {
   "convex-knowledge": { enabled: true, config: { convexUrl: process.env.CONVEX_URL } },
   "postiz": { enabled: true, config: { postizUrl: process.env.POSTIZ_URL, postizApiKey: process.env.POSTIZ_API_KEY } },
   "beehiiv": { enabled: true, config: { beehiivApiKey: process.env.BEEHIIV_API_KEY, beehiivPublicationId: process.env.BEEHIIV_PUB_ID } },
-  "video-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveServiceAccountKey: process.env.DRIVE_SA_KEY || undefined } },
-  "image-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveServiceAccountKey: process.env.DRIVE_SA_KEY || undefined } }
+  "video-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveClientId: process.env.DRIVE_CLIENT_ID || undefined, driveClientSecret: process.env.DRIVE_CLIENT_SECRET || undefined, driveRefreshToken: process.env.DRIVE_REFRESH_TOKEN || undefined } },
+  "image-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveClientId: process.env.DRIVE_CLIENT_ID || undefined, driveClientSecret: process.env.DRIVE_CLIENT_SECRET || undefined, driveRefreshToken: process.env.DRIVE_REFRESH_TOKEN || undefined } }
 });
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 console.log("Plugin configs written successfully");
@@ -326,7 +328,7 @@ NODESCRIPT
 
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo CONVEX_URL='${CONVEX_URL}' POSTIZ_URL='${POSTIZ_URL}' POSTIZ_API_KEY='${POSTIZ_API_KEY}' BEEHIIV_API_KEY='${BEEHIIV_API_KEY}' BEEHIIV_PUB_ID='${BEEHIIV_PUB_ID}' GOOGLE_AI_API_KEY='${GOOGLE_AI_API_KEY}' OPENAI_API_KEY='${OPENAI_API_KEY}' DRIVE_FOLDER_ID='${DRIVE_FOLDER_ID}' DRIVE_SA_KEY='${DRIVE_SA_KEY}' node -e '${PATCH_SCRIPT}'"
+    -- "sudo CONVEX_URL='${CONVEX_URL}' POSTIZ_URL='${POSTIZ_URL}' POSTIZ_API_KEY='${POSTIZ_API_KEY}' BEEHIIV_API_KEY='${BEEHIIV_API_KEY}' BEEHIIV_PUB_ID='${BEEHIIV_PUB_ID}' GOOGLE_AI_API_KEY='${GOOGLE_AI_API_KEY}' OPENAI_API_KEY='${OPENAI_API_KEY}' DRIVE_FOLDER_ID='${DRIVE_FOLDER_ID}' DRIVE_CLIENT_ID='${DRIVE_CLIENT_ID}' DRIVE_CLIENT_SECRET='${DRIVE_CLIENT_SECRET}' DRIVE_REFRESH_TOKEN='${DRIVE_REFRESH_TOKEN}' node -e '${PATCH_SCRIPT}'"
 
   echo "==> Restarting OpenClaw..."
   gcloud compute ssh "${VM_NAME}" \

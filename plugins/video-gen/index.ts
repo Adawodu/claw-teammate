@@ -47,7 +47,7 @@ async function veoGenerate(
     throw new Error(`Veo submit error ${res.status}: ${text}`);
   }
   const data = await res.json();
-  return data.name as string; // operation name
+  return data.name as string;
 }
 
 async function veoPoll(apiKey: string, operationName: string) {
@@ -106,36 +106,21 @@ async function soraPoll(apiKey: string, videoId: string) {
   return res.json();
 }
 
-// ── Google Drive helpers ──────────────────────────────────────────────
-async function getDriveAccessToken(serviceAccountKey: string): Promise<string> {
-  const key = JSON.parse(serviceAccountKey);
-  const now = Math.floor(Date.now() / 1000);
-  const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const payload = btoa(
-    JSON.stringify({
-      iss: key.client_email,
-      scope: "https://www.googleapis.com/auth/drive.file",
-      aud: "https://oauth2.googleapis.com/token",
-      iat: now,
-      exp: now + 3600,
-    }),
-  );
-
-  const crypto = await import("crypto");
-  const signer = crypto.createSign("RSA-SHA256");
-  signer.update(`${header}.${payload}`);
-  const signature = signer
-    .sign(key.private_key, "base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-
-  const jwt = `${header}.${payload}.${signature}`;
-
+// ── Google Drive helpers (OAuth2 refresh token) ───────────────────────
+async function getDriveAccessToken(
+  clientId: string,
+  clientSecret: string,
+  refreshToken: string,
+): Promise<string> {
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }).toString(),
   });
   if (!tokenRes.ok) {
     const text = await tokenRes.text();
@@ -152,7 +137,6 @@ async function uploadToDriveResumable(
   mimeType: string,
   data: ArrayBuffer,
 ): Promise<{ id: string; webViewLink: string }> {
-  // Initiate resumable upload
   const initRes = await fetch(
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,webViewLink",
     {
@@ -179,7 +163,6 @@ async function uploadToDriveResumable(
     throw new Error("No upload URL in resumable init response");
   }
 
-  // Upload the data
   const uploadRes = await fetch(uploadUrl, {
     method: "PUT",
     headers: {
@@ -194,7 +177,6 @@ async function uploadToDriveResumable(
   }
   const file = await uploadRes.json();
 
-  // Make shareable
   await fetch(
     `https://www.googleapis.com/drive/v3/files/${file.id}/permissions`,
     {
@@ -214,7 +196,9 @@ async function uploadToDriveResumable(
 async function persistVideo(opts: {
   convexUrl?: string;
   driveFolderId?: string;
-  driveServiceAccountKey?: string;
+  driveClientId?: string;
+  driveClientSecret?: string;
+  driveRefreshToken?: string;
   sourceUrl: string;
   mimeType: string;
   prompt: string;
@@ -237,24 +221,27 @@ async function persistVideo(opts: {
       if (opts.apiKeyHeader) body.apiKeyHeader = opts.apiKeyHeader;
 
       const convexRes = await fetch(
-        `${opts.convexUrl}/api/action/mediaActions:storeVideo`,
+        `${opts.convexUrl}/api/action`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ args: body }),
+          body: JSON.stringify({ path: "mediaActions:storeVideo", args: body }),
         },
       );
       if (convexRes.ok) {
         const data = await convexRes.json();
         result.convexUrl = data.value?.url;
+      } else {
+        const text = await convexRes.text();
+        console.error(`Convex video action failed ${convexRes.status}: ${text}`);
       }
     } catch (err) {
       console.error("Convex video storage failed:", err);
     }
   }
 
-  // Upload to Google Drive (resumable for large videos)
-  if (opts.driveFolderId && opts.driveServiceAccountKey) {
+  // Upload to Google Drive (resumable, OAuth2 refresh token)
+  if (opts.driveFolderId && opts.driveClientId && opts.driveClientSecret && opts.driveRefreshToken) {
     try {
       const headers: Record<string, string> = {};
       if (opts.authHeader) headers["Authorization"] = opts.authHeader;
@@ -265,7 +252,9 @@ async function persistVideo(opts: {
       const videoBuffer = await res.arrayBuffer();
 
       const accessToken = await getDriveAccessToken(
-        opts.driveServiceAccountKey,
+        opts.driveClientId,
+        opts.driveClientSecret,
+        opts.driveRefreshToken,
       );
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const fileName = `video-${opts.provider}-${timestamp}.mp4`;
@@ -299,7 +288,9 @@ const videoGenPlugin = {
       openaiApiKey: { type: "string" as const },
       convexUrl: { type: "string" as const },
       driveFolderId: { type: "string" as const },
-      driveServiceAccountKey: { type: "string" as const },
+      driveClientId: { type: "string" as const },
+      driveClientSecret: { type: "string" as const },
+      driveRefreshToken: { type: "string" as const },
     },
     required: ["geminiApiKey"],
   },
@@ -308,8 +299,9 @@ const videoGenPlugin = {
     const openaiApiKey = pluginApi.pluginConfig?.openaiApiKey;
     const convexUrl = pluginApi.pluginConfig?.convexUrl;
     const driveFolderId = pluginApi.pluginConfig?.driveFolderId;
-    const driveServiceAccountKey =
-      pluginApi.pluginConfig?.driveServiceAccountKey;
+    const driveClientId = pluginApi.pluginConfig?.driveClientId;
+    const driveClientSecret = pluginApi.pluginConfig?.driveClientSecret;
+    const driveRefreshToken = pluginApi.pluginConfig?.driveRefreshToken;
 
     if (!geminiApiKey) {
       pluginApi.logger?.warn?.("geminiApiKey not configured for video-gen");
@@ -377,11 +369,12 @@ const videoGenPlugin = {
               if (status.status === "completed") {
                 const downloadUrl = `${SORA_BASE}/${videoId}/content`;
 
-                // Persist media
                 const stored = await persistVideo({
                   convexUrl,
                   driveFolderId,
-                  driveServiceAccountKey,
+                  driveClientId,
+                  driveClientSecret,
+                  driveRefreshToken,
                   sourceUrl: downloadUrl,
                   mimeType: "video/mp4",
                   prompt: params.prompt,
@@ -442,11 +435,12 @@ const videoGenPlugin = {
               if (samples && samples.length > 0) {
                 const videoUri = samples[0].video?.uri;
 
-                // Persist media
                 const stored = await persistVideo({
                   convexUrl,
                   driveFolderId,
-                  driveServiceAccountKey,
+                  driveClientId,
+                  driveClientSecret,
+                  driveRefreshToken,
                   sourceUrl: videoUri,
                   mimeType: "video/mp4",
                   prompt: params.prompt,
@@ -528,11 +522,12 @@ const videoGenPlugin = {
             if (status.status === "completed") {
               const downloadUrl = `${SORA_BASE}/${params.jobId}/content`;
 
-              // Persist on status check too (in case it wasn't stored yet)
               const stored = await persistVideo({
                 convexUrl,
                 driveFolderId,
-                driveServiceAccountKey,
+                driveClientId,
+                driveClientSecret,
+                driveRefreshToken,
                 sourceUrl: downloadUrl,
                 mimeType: "video/mp4",
                 prompt: "Video (persisted on status check)",
@@ -570,7 +565,9 @@ const videoGenPlugin = {
               const stored = await persistVideo({
                 convexUrl,
                 driveFolderId,
-                driveServiceAccountKey,
+                driveClientId,
+                driveClientSecret,
+                driveRefreshToken,
                 sourceUrl: videoUri,
                 mimeType: "video/mp4",
                 prompt: "Video (persisted on status check)",

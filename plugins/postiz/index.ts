@@ -35,7 +35,7 @@ const postizPlugin = {
       const options: RequestInit = {
         method,
         headers: {
-          Authorization: `Bearer ${postizApiKey}`,
+          Authorization: postizApiKey,
           "Content-Type": "application/json",
         },
       };
@@ -73,7 +73,8 @@ const postizPlugin = {
       name: "postiz_create_post",
       label: "Postiz Create Post",
       description:
-        'Create a social media post via Postiz. Defaults to draft mode. For multi-platform, pass comma-separated integrationIds and platformTypes. Call postiz_channels first to get IDs.',
+        'Create a social media post via Postiz. Defaults to draft mode. For multi-platform, pass comma-separated integrationIds and platformTypes. Call postiz_channels first to get IDs. ' +
+        'For Instagram, postType defaults to "post" (can also be "story").',
       parameters: Type.Object({
         integrationIds: Type.String({
           description:
@@ -82,12 +83,18 @@ const postizPlugin = {
         content: Type.String({ description: "The post text content" }),
         platformTypes: Type.String({
           description:
-            'Comma-separated platform types matching each integrationId, e.g. "x,linkedin"',
+            'Comma-separated platform types matching each integrationId, e.g. "instagram,linkedin"',
         }),
         type: Type.Optional(
           Type.String({
             description:
               'Post type: "draft" (default), "schedule" (requires date), or "now". Per policy, defaults to draft.',
+          }),
+        ),
+        postType: Type.Optional(
+          Type.String({
+            description:
+              'Content format: "post" (default) or "story". Required for Instagram.',
           }),
         ),
         date: Type.Optional(
@@ -98,42 +105,57 @@ const postizPlugin = {
         ),
         imageUrls: Type.Optional(
           Type.String({
-            description: "Comma-separated image URLs to attach (optional)",
+            description:
+              'Comma-separated image URLs to attach. Each URL becomes an image attachment with auto-generated ID.',
           }),
         ),
       }),
       async execute(_toolCallId: string, params: any) {
         try {
-          const postType = params.type || "draft";
+          const scheduleType = params.type || "draft";
+          const postType = params.postType || "post";
           const ids = params.integrationIds.split(",").map((s: string) => s.trim());
           const platforms = params.platformTypes.split(",").map((s: string) => s.trim());
           const images = params.imageUrls && params.imageUrls.trim() !== ""
-            ? params.imageUrls.split(",").map((s: string) => s.trim())
+            ? params.imageUrls.split(",").map((s: string, idx: number) => ({
+                id: `img-${Date.now()}-${idx}`,
+                path: s.trim(),
+              }))
             : [];
 
+          // Build platform-specific settings
+          function buildSettings(platform: string) {
+            const settings: any = { __type: platform };
+            if (platform === "instagram") {
+              settings.post_type = postType;
+              settings.is_trial_reel = false;
+              settings.collaborators = [];
+            }
+            return settings;
+          }
+
           const body: any = {
-            type: postType,
+            type: scheduleType,
             shortLink: false,
             tags: [],
             posts: ids.map((id: string, i: number) => ({
               integration: { id },
               value: [{ content: params.content, image: images }],
-              settings: { __type: platforms[i] || platforms[0] },
+              settings: buildSettings(platforms[i] || platforms[0]),
             })),
           };
 
-          // Always include date - use provided date or default to current time
+          // Always include date
           if (params.date) {
             body.date = params.date;
           } else {
-            // Default to current time plus 1 hour for scheduled posts
             body.date = new Date(Date.now() + 3600000).toISOString();
           }
 
           const data = await callPostiz("POST", "/public/v1/posts", body);
           return json({
             ...data,
-            message: `Post created as ${postType}${postType === "schedule" ? ` for ${params.date}` : ""}`,
+            message: `Post created as ${scheduleType}${scheduleType === "schedule" ? ` for ${params.date}` : ""}`,
           });
         } catch (err) {
           return json({ error: err instanceof Error ? err.message : String(err) });
