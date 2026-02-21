@@ -6,6 +6,7 @@ dist/
 .pytest_cache/
 .env
 node_modules/
+package-lock.json
 .DS_Store
 
 .env.local
