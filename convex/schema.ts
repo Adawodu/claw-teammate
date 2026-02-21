@@ -36,4 +36,17 @@ export default defineSchema({
   })
     .index("by_date", ["date"])
     .index("by_date_model", ["date", "model"]),
+
+  media: defineTable({
+    storageId: v.id("_storage"),
+    type: v.string(),
+    prompt: v.string(),
+    provider: v.string(),
+    mimeType: v.string(),
+    driveUrl: v.optional(v.string()),
+    driveFileId: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_type", ["type"])
+    .index("by_createdAt", ["createdAt"]),
 });

@@ -31,6 +31,7 @@ echo "==> Enabling required APIs..."
 gcloud services enable \
   compute.googleapis.com \
   secretmanager.googleapis.com \
+  drive.googleapis.com \
   --project="${PROJECT}"
 
 # ── Service account ──────────────────────────────────────────────────
@@ -292,7 +293,7 @@ install_image_gen_plugin() {
 # one shot. This avoids the global validation issue with `openclaw config set`.
 configure_all_plugins() {
   echo "==> Fetching plugin secrets..."
-  local CONVEX_URL POSTIZ_URL POSTIZ_API_KEY BEEHIIV_API_KEY BEEHIIV_PUB_ID GOOGLE_AI_API_KEY OPENAI_API_KEY
+  local CONVEX_URL POSTIZ_URL POSTIZ_API_KEY BEEHIIV_API_KEY BEEHIIV_PUB_ID GOOGLE_AI_API_KEY OPENAI_API_KEY DRIVE_FOLDER_ID DRIVE_SA_KEY
   CONVEX_URL="$(gcloud secrets versions access latest --secret=convex-url --project="${PROJECT}")"
   POSTIZ_URL="$(gcloud secrets versions access latest --secret=postiz-url --project="${PROJECT}")"
   POSTIZ_API_KEY="$(gcloud secrets versions access latest --secret=postiz-api-key --project="${PROJECT}")"
@@ -300,6 +301,8 @@ configure_all_plugins() {
   BEEHIIV_PUB_ID="$(gcloud secrets versions access latest --secret=beehiiv-publication-id --project="${PROJECT}")"
   GOOGLE_AI_API_KEY="$(gcloud secrets versions access latest --secret=google-ai-api-key --project="${PROJECT}")"
   OPENAI_API_KEY="$(gcloud secrets versions access latest --secret=openai-api-key --project="${PROJECT}" || true)"
+  DRIVE_FOLDER_ID="$(gcloud secrets versions access latest --secret=drive-media-folder-id --project="${PROJECT}" || true)"
+  DRIVE_SA_KEY="$(gcloud secrets versions access latest --secret=drive-service-account-key --project="${PROJECT}" || true)"
 
   echo "==> Patching openclaw.json with plugin configs..."
   # Build a node script that reads current config and merges plugin entries
@@ -313,8 +316,8 @@ config.plugins.entries = Object.assign(config.plugins.entries || {}, {
   "convex-knowledge": { enabled: true, config: { convexUrl: process.env.CONVEX_URL } },
   "postiz": { enabled: true, config: { postizUrl: process.env.POSTIZ_URL, postizApiKey: process.env.POSTIZ_API_KEY } },
   "beehiiv": { enabled: true, config: { beehiivApiKey: process.env.BEEHIIV_API_KEY, beehiivPublicationId: process.env.BEEHIIV_PUB_ID } },
-  "video-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY } },
-  "image-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY } }
+  "video-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveServiceAccountKey: process.env.DRIVE_SA_KEY || undefined } },
+  "image-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveServiceAccountKey: process.env.DRIVE_SA_KEY || undefined } }
 });
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 console.log("Plugin configs written successfully");
@@ -323,7 +326,7 @@ NODESCRIPT
 
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo CONVEX_URL='${CONVEX_URL}' POSTIZ_URL='${POSTIZ_URL}' POSTIZ_API_KEY='${POSTIZ_API_KEY}' BEEHIIV_API_KEY='${BEEHIIV_API_KEY}' BEEHIIV_PUB_ID='${BEEHIIV_PUB_ID}' GOOGLE_AI_API_KEY='${GOOGLE_AI_API_KEY}' OPENAI_API_KEY='${OPENAI_API_KEY}' node -e '${PATCH_SCRIPT}'"
+    -- "sudo CONVEX_URL='${CONVEX_URL}' POSTIZ_URL='${POSTIZ_URL}' POSTIZ_API_KEY='${POSTIZ_API_KEY}' BEEHIIV_API_KEY='${BEEHIIV_API_KEY}' BEEHIIV_PUB_ID='${BEEHIIV_PUB_ID}' GOOGLE_AI_API_KEY='${GOOGLE_AI_API_KEY}' OPENAI_API_KEY='${OPENAI_API_KEY}' DRIVE_FOLDER_ID='${DRIVE_FOLDER_ID}' DRIVE_SA_KEY='${DRIVE_SA_KEY}' node -e '${PATCH_SCRIPT}'"
 
   echo "==> Restarting OpenClaw..."
   gcloud compute ssh "${VM_NAME}" \

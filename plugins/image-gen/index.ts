@@ -76,6 +76,203 @@ async function dalleGenerate(
   return res.json();
 }
 
+// ── Google Drive helpers ──────────────────────────────────────────────
+async function getDriveAccessToken(serviceAccountKey: string): Promise<string> {
+  const key = JSON.parse(serviceAccountKey);
+  const now = Math.floor(Date.now() / 1000);
+  const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const payload = btoa(
+    JSON.stringify({
+      iss: key.client_email,
+      scope: "https://www.googleapis.com/auth/drive.file",
+      aud: "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
+    }),
+  );
+
+  // Sign JWT with the service account private key
+  const crypto = await import("crypto");
+  const signer = crypto.createSign("RSA-SHA256");
+  signer.update(`${header}.${payload}`);
+  const signature = signer
+    .sign(key.private_key, "base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  const jwt = `${header}.${payload}.${signature}`;
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+  });
+  if (!tokenRes.ok) {
+    const text = await tokenRes.text();
+    throw new Error(`Drive token error ${tokenRes.status}: ${text}`);
+  }
+  const tokenData = await tokenRes.json();
+  return tokenData.access_token;
+}
+
+async function uploadToDrive(
+  accessToken: string,
+  folderId: string,
+  fileName: string,
+  mimeType: string,
+  data: ArrayBuffer,
+): Promise<{ id: string; webViewLink: string }> {
+  const metadata = JSON.stringify({
+    name: fileName,
+    parents: [folderId],
+  });
+
+  const boundary = "media_upload_boundary";
+  const body =
+    `--${boundary}\r\n` +
+    `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+    `${metadata}\r\n` +
+    `--${boundary}\r\n` +
+    `Content-Type: ${mimeType}\r\n` +
+    `Content-Transfer-Encoding: base64\r\n\r\n`;
+
+  const encoder = new TextEncoder();
+  const prefix = encoder.encode(body);
+  const base64Data = Buffer.from(data).toString("base64");
+  const suffix = encoder.encode(`\r\n--${boundary}--`);
+  const fullBody = Buffer.concat([
+    prefix,
+    encoder.encode(base64Data),
+    suffix,
+  ]);
+
+  const res = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body: fullBody,
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Drive upload error ${res.status}: ${text}`);
+  }
+  const file = await res.json();
+
+  // Make shareable (anyone with link)
+  await fetch(
+    `https://www.googleapis.com/drive/v3/files/${file.id}/permissions`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ role: "reader", type: "anyone" }),
+    },
+  );
+
+  return { id: file.id, webViewLink: file.webViewLink };
+}
+
+// ── Media persistence helper ──────────────────────────────────────────
+async function persistMedia(opts: {
+  convexUrl?: string;
+  driveFolderId?: string;
+  driveServiceAccountKey?: string;
+  base64Data?: string;
+  sourceUrl?: string;
+  mimeType: string;
+  prompt: string;
+  provider: string;
+}): Promise<{ convexUrl?: string; driveUrl?: string }> {
+  const result: { convexUrl?: string; driveUrl?: string } = {};
+
+  // Store to Convex
+  if (opts.convexUrl) {
+    try {
+      let actionName: string;
+      let body: Record<string, string>;
+
+      if (opts.base64Data) {
+        actionName = "mediaActions:storeImage";
+        body = {
+          base64Data: opts.base64Data,
+          mimeType: opts.mimeType,
+          prompt: opts.prompt,
+          provider: opts.provider,
+        };
+      } else if (opts.sourceUrl) {
+        actionName = "mediaActions:storeImageFromUrl";
+        body = {
+          sourceUrl: opts.sourceUrl,
+          mimeType: opts.mimeType,
+          prompt: opts.prompt,
+          provider: opts.provider,
+        };
+      } else {
+        throw new Error("No image data to store");
+      }
+
+      const convexRes = await fetch(
+        `${opts.convexUrl}/api/action/${actionName}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ args: body }),
+        },
+      );
+      if (convexRes.ok) {
+        const data = await convexRes.json();
+        result.convexUrl = data.value?.url;
+      }
+    } catch (err) {
+      // Non-fatal: log but continue
+      console.error("Convex storage failed:", err);
+    }
+  }
+
+  // Upload to Google Drive
+  if (opts.driveFolderId && opts.driveServiceAccountKey) {
+    try {
+      let imageBuffer: ArrayBuffer;
+      if (opts.base64Data) {
+        imageBuffer = Buffer.from(opts.base64Data, "base64").buffer;
+      } else if (opts.sourceUrl) {
+        const res = await fetch(opts.sourceUrl);
+        imageBuffer = await res.arrayBuffer();
+      } else {
+        throw new Error("No image data for Drive upload");
+      }
+
+      const accessToken = await getDriveAccessToken(
+        opts.driveServiceAccountKey,
+      );
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const ext = opts.mimeType.includes("png") ? "png" : "jpg";
+      const fileName = `image-${opts.provider}-${timestamp}.${ext}`;
+
+      const driveFile = await uploadToDrive(
+        accessToken,
+        opts.driveFolderId,
+        fileName,
+        opts.mimeType,
+        imageBuffer,
+      );
+      result.driveUrl = driveFile.webViewLink;
+    } catch (err) {
+      console.error("Drive upload failed:", err);
+    }
+  }
+
+  return result;
+}
+
 // ── Plugin ─────────────────────────────────────────────────────────────
 const imageGenPlugin = {
   id: "image-gen",
@@ -87,12 +284,19 @@ const imageGenPlugin = {
     properties: {
       geminiApiKey: { type: "string" as const },
       openaiApiKey: { type: "string" as const },
+      convexUrl: { type: "string" as const },
+      driveFolderId: { type: "string" as const },
+      driveServiceAccountKey: { type: "string" as const },
     },
     required: ["geminiApiKey"],
   },
   register(pluginApi: any) {
     const geminiApiKey = pluginApi.pluginConfig?.geminiApiKey;
     const openaiApiKey = pluginApi.pluginConfig?.openaiApiKey;
+    const convexUrl = pluginApi.pluginConfig?.convexUrl;
+    const driveFolderId = pluginApi.pluginConfig?.driveFolderId;
+    const driveServiceAccountKey =
+      pluginApi.pluginConfig?.driveServiceAccountKey;
 
     if (!geminiApiKey) {
       pluginApi.logger?.warn?.("geminiApiKey not configured for image-gen");
@@ -105,7 +309,7 @@ const imageGenPlugin = {
       description:
         "Generate an image from a text prompt. Uses Google Imagen 4 by default (fast & high quality). " +
         "Optionally specify provider='dalle' for OpenAI DALL-E 3. " +
-        "Imagen returns base64 image data. DALL-E returns a temporary URL (expires in ~1 hour).",
+        "Images are automatically persisted to Convex (permanent URL) and Google Drive (shareable link) if configured.",
       parameters: Type.Object({
         prompt: Type.String({
           description: "Text description of the image to generate",
@@ -142,13 +346,29 @@ const imageGenPlugin = {
               aspectRatio,
             );
             const image = data.data?.[0];
+
+            // Persist media
+            const stored = await persistMedia({
+              convexUrl,
+              driveFolderId,
+              driveServiceAccountKey,
+              sourceUrl: image?.url,
+              mimeType: "image/png",
+              prompt: params.prompt,
+              provider: "dalle",
+            });
+
             return json({
               provider: "dalle",
               status: "completed",
-              imageUrl: image?.url,
+              imageUrl: stored.convexUrl || image?.url,
+              temporaryUrl: image?.url,
+              convexUrl: stored.convexUrl,
+              driveUrl: stored.driveUrl,
               revisedPrompt: image?.revised_prompt,
-              message:
-                "Image generated successfully. URL expires in ~1 hour.",
+              message: stored.convexUrl
+                ? "Image generated and stored permanently."
+                : "Image generated. URL expires in ~1 hour.",
             });
           }
 
@@ -168,13 +388,30 @@ const imageGenPlugin = {
             });
           }
 
+          // Persist media
+          const stored = await persistMedia({
+            convexUrl,
+            driveFolderId,
+            driveServiceAccountKey,
+            base64Data: prediction.bytesBase64Encoded,
+            mimeType: prediction.mimeType || "image/jpeg",
+            prompt: params.prompt,
+            provider: "imagen",
+          });
+
           return json({
             provider: "imagen",
             status: "completed",
             mimeType: prediction.mimeType || "image/jpeg",
-            imageBase64: prediction.bytesBase64Encoded,
-            message:
-              "Image generated successfully. The imageBase64 field contains the base64-encoded image data.",
+            imageBase64: stored.convexUrl
+              ? undefined
+              : prediction.bytesBase64Encoded,
+            imageUrl: stored.convexUrl,
+            convexUrl: stored.convexUrl,
+            driveUrl: stored.driveUrl,
+            message: stored.convexUrl
+              ? "Image generated and stored permanently. Use imageUrl for the permanent link."
+              : "Image generated. The imageBase64 field contains the base64-encoded image data.",
           });
         } catch (err) {
           return json({
@@ -183,6 +420,68 @@ const imageGenPlugin = {
         }
       },
     });
+
+    // ── media_gallery ───────────────────────────────────────────────
+    if (convexUrl) {
+      pluginApi.registerTool({
+        name: "media_gallery",
+        label: "Media Gallery",
+        description:
+          "List recently generated images and videos with their permanent URLs and Drive links. " +
+          "Optionally filter by type (image/video).",
+        parameters: Type.Object({
+          type: Type.Optional(
+            Type.String({
+              description:
+                'Filter by media type: "image" or "video". Omit for all.',
+            }),
+          ),
+          limit: Type.Optional(
+            Type.Number({
+              description: "Max number of results (default: 10)",
+            }),
+          ),
+        }),
+        async execute(_toolCallId: string, params: any) {
+          try {
+            const queryArgs: Record<string, unknown> = {};
+            if (params.type) queryArgs.type = params.type;
+            if (params.limit) queryArgs.limit = params.limit;
+
+            const res = await fetch(
+              `${convexUrl}/api/query/media:list`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ args: queryArgs }),
+              },
+            );
+            if (!res.ok) {
+              const text = await res.text();
+              throw new Error(`Convex query error ${res.status}: ${text}`);
+            }
+            const data = await res.json();
+            const items = data.value || [];
+            return json({
+              count: items.length,
+              media: items.map((item: any) => ({
+                id: item._id,
+                type: item.type,
+                prompt: item.prompt,
+                provider: item.provider,
+                url: item.url,
+                driveUrl: item.driveUrl,
+                createdAt: new Date(item.createdAt).toISOString(),
+              })),
+            });
+          } catch (err) {
+            return json({
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        },
+      });
+    }
   },
 };
 
