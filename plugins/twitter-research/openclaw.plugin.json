@@ -1,0 +1,11 @@
+{
+  "id": "twitter-research",
+  "name": "Twitter/X Research",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "bearerToken": { "type": "string" }
+    },
+    "required": ["bearerToken"]
+  }
+}

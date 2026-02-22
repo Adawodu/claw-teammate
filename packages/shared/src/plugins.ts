@@ -83,6 +83,20 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     ],
   },
   {
+    id: "twitter-research",
+    name: "Twitter/X Research",
+    description: "Research trends, search tweets, and monitor influencers on Twitter/X",
+    requiredKeys: [
+      {
+        key: "bearerToken",
+        secretName: "twitter-bearer-token",
+        description: "Twitter API Bearer Token",
+        signupUrl: "https://developer.x.com/en/portal/dashboard",
+      },
+    ],
+    optionalKeys: [],
+  },
+  {
     id: "video-gen",
     name: "Video Generation",
     description: "Generate videos using Gemini Veo with persistent storage",

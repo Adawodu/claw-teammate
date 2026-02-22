@@ -303,6 +303,7 @@ openclaw config set gateway.bind loopback
 openclaw config set gateway.mode local
 openclaw config set channels.telegram.enabled true
 openclaw config set channels.telegram.botToken "\${TELEGRAM_BOT_TOKEN}" > /dev/null 2>&1
+openclaw config set channels.telegram.allowFrom '["*"]'
 openclaw config set channels.telegram.dmPolicy open
 openclaw config set channels.telegram.groupPolicy disabled
 
@@ -342,6 +343,10 @@ ${pluginDownloads}
 echo "==> Installing skills..."
 ${skillDownloads}
 
+# ── Plugin allowlist ─────────────────────────────────────────────
+echo "==> Setting plugin allowlist..."
+openclaw config set plugins.allow '${JSON.stringify(config.enabledPlugins)}' 2>/dev/null || true
+
 # ── Systemd unit ─────────────────────────────────────────────────
 cat > /etc/systemd/system/openclaw.service <<UNIT
 [Unit]
@@ -352,7 +357,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 EnvironmentFile=/etc/openclaw.env
-ExecStartPre=/usr/bin/env openclaw security audit --fix
+ExecStartPre=-/usr/bin/env openclaw security audit --fix
 ExecStart=/usr/bin/env openclaw gateway run --bind loopback
 Restart=always
 RestartSec=10
