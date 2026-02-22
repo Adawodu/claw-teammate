@@ -88,43 +88,59 @@ const twitterResearchPlugin = {
       },
     });
 
-    // ── Get trending topics ──────────────────────────────────────────
+    // ── Discover trending topics via popular tweets ─────────────────
     pluginApi.registerTool({
-      name: "twitter_trends",
-      label: "Twitter Trends",
+      name: "twitter_trending",
+      label: "Twitter Trending Topics",
       description:
-        "Get trending topics for a location on Twitter/X. Use WOEID 1 for worldwide, 23424977 for US, 23424975 for UK.",
+        "Discover what's trending on Twitter/X by searching for high-engagement recent tweets on a topic or broadly. " +
+        "Works on the Free API tier (uses search, not the restricted trends endpoint).",
       parameters: Type.Object({
-        woeid: Type.Optional(
-          Type.Number({
+        topic: Type.Optional(
+          Type.String({
             description:
-              "Where On Earth ID. 1=Worldwide, 23424977=US, 23424975=UK, 23424848=India. Default: 1",
+              'Topic to find trends around, e.g. "AI", "tech", "sports". Leave empty for general popular tweets.',
+          })
+        ),
+        maxResults: Type.Optional(
+          Type.Number({
+            description: "Number of results (10-100, default 20)",
           })
         ),
       }),
       async execute(_toolCallId: string, params: any) {
         try {
-          const woeid = params.woeid || 1;
-          // v1.1 endpoint — still works with Bearer token
-          const res = await fetch(
-            `https://api.twitter.com/1.1/trends/place.json?id=${woeid}`,
-            { headers: { Authorization: `Bearer ${bearerToken}` } }
-          );
-          if (!res.ok) {
-            const text = await res.text();
-            throw new Error(`Twitter API ${res.status}: ${text}`);
+          const topic = params.topic || "trending";
+          const query = `${topic} -is:retweet lang:en`;
+          const data = await callTwitter("/tweets/search/recent", {
+            query,
+            max_results: String(params.maxResults || 20),
+            sort_order: "relevancy",
+            "tweet.fields":
+              "author_id,created_at,public_metrics,entities,lang",
+            expansions: "author_id",
+            "user.fields": "name,username,verified,public_metrics",
+          });
+
+          // Extract hashtags and topics from entities
+          const hashtagCounts: Record<string, number> = {};
+          for (const tweet of data.data || []) {
+            for (const tag of tweet.entities?.hashtags || []) {
+              const name = tag.tag.toLowerCase();
+              hashtagCounts[name] = (hashtagCounts[name] || 0) + 1;
+            }
           }
-          const data = await res.json();
-          // Flatten to just the trends array
-          const trends = data[0]?.trends || [];
+          const topHashtags = Object.entries(hashtagCounts)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 15)
+            .map(([tag, count]) => ({ tag: `#${tag}`, mentions: count }));
+
           return json({
-            location: data[0]?.locations?.[0]?.name || "Unknown",
-            as_of: data[0]?.as_of,
-            trends: trends.slice(0, 30).map((t: any) => ({
-              name: t.name,
-              url: t.url,
-              tweet_volume: t.tweet_volume,
-            })),
+            query: topic,
+            tweet_count: data.meta?.result_count || 0,
+            top_hashtags: topHashtags,
+            tweets: data.data,
+            users: data.includes?.users,
           });
         } catch (err) {
           return json({
