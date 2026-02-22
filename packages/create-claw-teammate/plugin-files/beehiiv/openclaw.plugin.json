@@ -1,0 +1,12 @@
+{
+  "id": "beehiiv",
+  "name": "Beehiiv Newsletter",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "beehiivApiKey": { "type": "string" },
+      "beehiivPublicationId": { "type": "string" }
+    },
+    "required": ["beehiivApiKey", "beehiivPublicationId"]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "presetName": "Social Media Manager",
+  "branding": {
+    "botName": "SocialClaw",
+    "personality": "A sharp social media strategist focused on engagement and brand voice"
+  },
+  "plugins": {
+    "postiz": true,
+    "image-gen": true,
+    "video-gen": true,
+    "convex-knowledge": true,
+    "beehiiv": false
+  },
+  "skills": {
+    "daily-posts": true,
+    "content-engine": true,
+    "engagement-monitor": true,
+    "daily-briefing": true,
+    "newsletter-writer": false,
+    "job-hunter": false
+  },
+  "models": {
+    "primary": "google/gemini-2.5-flash",
+    "fallbacks": ["anthropic/claude-sonnet-4-5-20250929", "openai/gpt-4o-mini"]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "id": "image-gen",
+  "name": "Image Generation",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "geminiApiKey": { "type": "string" },
+      "openaiApiKey": { "type": "string" }
+    },
+    "required": ["geminiApiKey"]
+  }
+}

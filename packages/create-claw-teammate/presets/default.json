@@ -1,0 +1,26 @@
+{
+  "presetName": "Full Stack (All Features)",
+  "branding": {
+    "botName": "Claw",
+    "personality": "A helpful AI teammate"
+  },
+  "plugins": {
+    "postiz": true,
+    "image-gen": true,
+    "video-gen": true,
+    "convex-knowledge": true,
+    "beehiiv": true
+  },
+  "skills": {
+    "daily-posts": true,
+    "content-engine": true,
+    "engagement-monitor": true,
+    "daily-briefing": true,
+    "newsletter-writer": true,
+    "job-hunter": true
+  },
+  "models": {
+    "primary": "google/gemini-2.5-flash",
+    "fallbacks": ["anthropic/claude-sonnet-4-5-20250929", "openai/gpt-4o-mini"]
+  }
+}

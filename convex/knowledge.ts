@@ -52,3 +52,26 @@ export const getById = query({
     return await ctx.db.get(args.id);
   },
 });
+
+// ── Tenant-filtered variant ─────────────────────────────────────
+
+export const listByUser = query({
+  args: {
+    userId: v.string(),
+    tag: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 20;
+    const entries = await ctx.db
+      .query("knowledge")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .take(limit);
+
+    if (args.tag) {
+      return entries.filter((e) => e.tags.includes(args.tag!));
+    }
+    return entries;
+  },
+});

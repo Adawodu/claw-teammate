@@ -81,3 +81,34 @@ export const recentActivity = query({
     return rows.filter((r) => r.date >= cutoffStr);
   },
 });
+
+// ── Tenant-filtered variants ────────────────────────────────────
+
+export const latestSnapshotByUser = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("costSnapshots")
+      .withIndex("by_userId_fetchedAt", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .first();
+  },
+});
+
+export const recentActivityByUser = query({
+  args: { userId: v.string(), days: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const days = args.days ?? 30;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const cutoffStr = cutoff.toISOString().split("T")[0];
+
+    const rows = await ctx.db
+      .query("openrouterActivity")
+      .withIndex("by_userId_date", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .collect();
+
+    return rows.filter((r) => r.date >= cutoffStr);
+  },
+});

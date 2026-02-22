@@ -2,9 +2,15 @@
   "name": "claw-teammate",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "plugins/*"
+  ],
   "scripts": {
     "convex:dev": "npx convex dev",
-    "convex:deploy": "npx convex deploy"
+    "convex:deploy": "npx convex deploy",
+    "dashboard:dev": "npm run dev --workspace=@claw-teammate/dashboard",
+    "dashboard:build": "npm run build --workspace=@claw-teammate/dashboard"
   },
   "dependencies": {
     "convex": "^1.21.0"

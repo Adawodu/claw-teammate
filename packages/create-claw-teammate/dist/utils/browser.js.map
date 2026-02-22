@@ -1,0 +1,1 @@
+{"version":3,"file":"browser.js","sourceRoot":"","sources":["../../src/utils/browser.ts"],"names":[],"mappings":"AAAA,OAAO,IAAI,MAAM,MAAM,CAAC;AAExB,MAAM,CAAC,KAAK,UAAU,OAAO,CAAC,GAAW;IACvC,IAAI,CAAC;QACH,MAAM,IAAI,CAAC,GAAG,CAAC,CAAC;IAClB,CAAC;IAAC,MAAM,CAAC;QACP,iDAAiD;IACnD,CAAC;AACH,CAAC"}

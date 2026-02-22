@@ -79,3 +79,33 @@ export const getById = query({
     return { ...entry, url };
   },
 });
+
+// ── Tenant-filtered variant ─────────────────────────────────────
+
+export const listByUser = query({
+  args: {
+    userId: v.string(),
+    type: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 20;
+
+    const entries = await ctx.db
+      .query("media")
+      .withIndex("by_userId_createdAt", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .take(limit);
+
+    const filtered = args.type
+      ? entries.filter((e) => e.type === args.type)
+      : entries;
+
+    return Promise.all(
+      filtered.map(async (entry) => ({
+        ...entry,
+        url: await ctx.storage.getUrl(entry.storageId),
+      })),
+    );
+  },
+});

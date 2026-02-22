@@ -1,0 +1,12 @@
+{
+  "id": "postiz",
+  "name": "Postiz Social Media",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "postizUrl": { "type": "string" },
+      "postizApiKey": { "type": "string" }
+    },
+    "required": ["postizUrl", "postizApiKey"]
+  }
+}

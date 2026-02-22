@@ -1,0 +1,11 @@
+{
+  "id": "convex-knowledge",
+  "name": "Convex Knowledge Base",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "convexUrl": { "type": "string" }
+    },
+    "required": ["convexUrl"]
+  }
+}

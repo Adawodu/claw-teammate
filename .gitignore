@@ -16,3 +16,12 @@ convex/_generated/
 
 # Article drafts (local only)
 DOCUMENTATION/linkedin-article*.md
+
+# CLI package build artifacts
+packages/create-claw-teammate/dist/
+packages/create-claw-teammate/plugin-files/
+packages/create-claw-teammate/skill-files/
+
+# Dashboard
+packages/dashboard/.next/
+packages/dashboard/.env.local

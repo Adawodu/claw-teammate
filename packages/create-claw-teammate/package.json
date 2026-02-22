@@ -1,0 +1,38 @@
+{
+  "name": "create-claw-teammate",
+  "version": "0.1.0",
+  "description": "Deploy your own AI teammate on your cloud",
+  "bin": {
+    "create-claw-teammate": "./dist/index.js"
+  },
+  "scripts": {
+    "prebuild": "node scripts/copy-files.js",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "files": [
+    "dist",
+    "presets",
+    "plugin-files",
+    "skill-files"
+  ],
+  "keywords": ["ai", "teammate", "openclaw", "deploy", "gcp"],
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@claw-teammate/shared": "*",
+    "@inquirer/prompts": "^7.0.0",
+    "chalk": "^5.4.1",
+    "execa": "^9.5.2",
+    "open": "^10.1.0",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
