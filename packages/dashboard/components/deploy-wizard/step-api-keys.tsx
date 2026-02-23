@@ -38,6 +38,13 @@ export function StepApiKeys({ state, update }: Props) {
       signupUrl: "https://openrouter.ai/keys",
       required: true,
     },
+    {
+      key: "braveApiKey",
+      secretName: "brave-api-key",
+      description: "Brave Search API key (for web search)",
+      signupUrl: "https://brave.com/search/api/",
+      required: true,
+    },
     ...getRequiredApiKeys(enabledPlugins),
   ];
 

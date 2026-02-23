@@ -27,6 +27,13 @@ const CORE_KEYS = [
     required: true,
   },
   {
+    key: "braveApiKey",
+    secretName: "brave-api-key",
+    description: "Brave Search API key — web search",
+    signupUrl: "https://brave.com/search/api/",
+    required: true,
+  },
+  {
     key: "openaiApiKey",
     secretName: "openai-api-key",
     description: "OpenAI API key — fallback model + DALL-E/Sora",
