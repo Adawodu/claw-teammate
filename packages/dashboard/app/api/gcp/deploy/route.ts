@@ -13,7 +13,7 @@ import {
   createInstance,
 } from "@/lib/gcp-rest";
 import { maskApiKey } from "@/lib/formatters";
-import { SKILL_REGISTRY } from "@claw-teammate/shared";
+import { SKILL_REGISTRY, PLUGIN_REGISTRY } from "@claw-teammate/shared";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -245,6 +245,22 @@ curl -sfL "${repoBase}/plugins/${p}/openclaw.plugin.json" -o "\${DEST}/openclaw.
     )
     .join("\n");
 
+  const pluginConfigs = config.enabledPlugins
+    .map((p) => {
+      const meta = PLUGIN_REGISTRY.find((pm) => pm.id === p);
+      if (!meta) return `# Plugin ${p}: no registry entry found`;
+      const lines = [
+        `openclaw config set plugins.entries.${p}.enabled true 2>/dev/null || true`,
+      ];
+      for (const k of [...meta.requiredKeys, ...meta.optionalKeys]) {
+        lines.push(
+          `openclaw config set plugins.entries.${p}.config.${k.key} "$(fetch_secret ${k.secretName})" 2>/dev/null || true`
+        );
+      }
+      return lines.join("\n");
+    })
+    .join("\n\n");
+
   const skillDownloads = config.enabledSkills
     .map((s) => {
       const meta = SKILL_REGISTRY.find((sk) => sk.id === s);
@@ -338,6 +354,10 @@ chmod 600 /etc/openclaw.env
 # ── Install plugins ──────────────────────────────────────────────
 echo "==> Installing plugins..."
 ${pluginDownloads}
+
+# ── Configure plugins ────────────────────────────────────────────
+echo "==> Configuring plugins..."
+${pluginConfigs}
 
 # ── Install skills ───────────────────────────────────────────────
 echo "==> Installing skills..."

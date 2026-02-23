@@ -75,9 +75,33 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
         signupUrl: "https://platform.openai.com/api-keys",
       },
       {
-        key: "driveOAuth",
+        key: "convexUrl",
+        secretName: "convex-url",
+        description: "Convex deployment URL (for media metadata storage)",
+        signupUrl: "https://convex.dev",
+      },
+      {
+        key: "driveFolderId",
+        secretName: "drive-media-folder-id",
+        description: "Google Drive folder ID for media storage",
+        signupUrl: "https://drive.google.com",
+      },
+      {
+        key: "driveClientId",
+        secretName: "drive-oauth-client-id",
+        description: "Google Drive OAuth client ID",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+      {
+        key: "driveClientSecret",
+        secretName: "drive-oauth-client-secret",
+        description: "Google Drive OAuth client secret",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+      {
+        key: "driveRefreshToken",
         secretName: "drive-oauth-refresh-token",
-        description: "Google Drive OAuth (for persistent media storage)",
+        description: "Google Drive OAuth refresh token",
         signupUrl: "https://console.cloud.google.com/apis/credentials",
       },
     ],
@@ -116,9 +140,33 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
         signupUrl: "https://platform.openai.com/api-keys",
       },
       {
-        key: "driveOAuth",
+        key: "convexUrl",
+        secretName: "convex-url",
+        description: "Convex deployment URL (for media metadata storage)",
+        signupUrl: "https://convex.dev",
+      },
+      {
+        key: "driveFolderId",
+        secretName: "drive-media-folder-id",
+        description: "Google Drive folder ID for media storage",
+        signupUrl: "https://drive.google.com",
+      },
+      {
+        key: "driveClientId",
+        secretName: "drive-oauth-client-id",
+        description: "Google Drive OAuth client ID",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+      {
+        key: "driveClientSecret",
+        secretName: "drive-oauth-client-secret",
+        description: "Google Drive OAuth client secret",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+      {
+        key: "driveRefreshToken",
         secretName: "drive-oauth-refresh-token",
-        description: "Google Drive OAuth (for persistent media storage)",
+        description: "Google Drive OAuth refresh token",
         signupUrl: "https://console.cloud.google.com/apis/credentials",
       },
     ],
@@ -146,7 +194,7 @@ export function getRequiredApiKeys(
       }
     }
     for (const k of plugin.optionalKeys) {
-      if (!seen.has(k.secretName) && k.key !== "driveOAuth") {
+      if (!seen.has(k.secretName)) {
         seen.add(k.secretName);
         keys.push({ ...k, required: false });
       }

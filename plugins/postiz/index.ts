@@ -130,6 +130,8 @@ const postizPlugin = {
               settings.post_type = postType;
               settings.is_trial_reel = false;
               settings.collaborators = [];
+            } else if (platform === "x") {
+              settings.who_can_reply_post = "everyone";
             }
             return settings;
           }

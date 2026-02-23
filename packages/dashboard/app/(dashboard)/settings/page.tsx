@@ -23,7 +23,6 @@ export default function SettingsPage() {
   const deployment = deployments?.[0];
   const router = useRouter();
   const updateStatus = useMutation(api.deployments.updateStatus);
-  const removeDeployment = useMutation(api.deployments.remove);
   const [acting, setActing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [actionResult, setActionResult] = useState<{
@@ -257,10 +256,10 @@ export default function SettingsPage() {
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium">Delete deployment record</p>
+              <p className="text-sm font-medium">Delete deployment</p>
               <p className="text-xs text-muted-foreground">
-                Removes this deployment from the dashboard. Does not delete the
-                GCP VM.
+                Deletes the GCP VM, Cloud NAT router, and removes the
+                deployment record from the dashboard.
               </p>
             </div>
             <Button
@@ -294,7 +293,7 @@ export default function SettingsPage() {
               {confirmAction === "stop"
                 ? "Stopping the VM will take your AI teammate offline. You can start it again later."
                 : confirmAction === "delete"
-                  ? "This will remove the deployment record from your dashboard. You can redeploy afterward."
+                  ? "This will delete the GCP VM, Cloud NAT router, and remove the deployment record. You can redeploy afterward."
                   : "Restarting the VM will briefly take your AI teammate offline while it reboots."}
             </DialogDescription>
           </DialogHeader>
@@ -312,7 +311,17 @@ export default function SettingsPage() {
                 if (confirmAction === "delete" && deployment) {
                   setDeleting(true);
                   try {
-                    await removeDeployment({ id: deployment._id });
+                    const res = await fetch("/api/gcp/delete", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        deploymentId: deployment._id,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      throw new Error(data.error || "Delete failed");
+                    }
                     setConfirmAction(null);
                     router.push("/deploy");
                   } catch (err) {

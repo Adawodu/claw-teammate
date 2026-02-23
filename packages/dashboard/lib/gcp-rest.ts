@@ -391,6 +391,40 @@ export async function resetInstance(
   );
 }
 
+export async function deleteInstance(
+  token: string,
+  project: string,
+  zone: string,
+  name: string
+): Promise<void> {
+  const res = await gcpFetch(
+    `${COMPUTE_BASE}/projects/${project}/zones/${zone}/instances/${name}`,
+    token,
+    { method: "DELETE" }
+  );
+  if (res.status === 404) return; // Already gone
+  if (!res.ok) {
+    throw new Error(await gcpError(res, "Failed to delete instance"));
+  }
+}
+
+export async function deleteRouter(
+  token: string,
+  project: string,
+  region: string,
+  name: string
+): Promise<void> {
+  const res = await gcpFetch(
+    `${COMPUTE_BASE}/projects/${project}/regions/${region}/routers/${name}`,
+    token,
+    { method: "DELETE" }
+  );
+  if (res.status === 404) return; // Already gone
+  if (!res.ok) {
+    throw new Error(await gcpError(res, "Failed to delete router"));
+  }
+}
+
 export async function getSerialPortOutput(
   token: string,
   project: string,
