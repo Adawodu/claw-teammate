@@ -34,6 +34,36 @@ http.route({
   }),
 });
 
+// ─── Storage proxy with file extension (for Postiz/Twitter) ─────────
+http.route({
+  pathPrefix: "/storage/",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    // Path: /storage/{storageId}.{ext}
+    const segment = url.pathname.replace("/storage/", "");
+    const storageId = segment.replace(/\.(png|jpg|jpeg|gif|webp|mp4)$/i, "");
+
+    if (!storageId) {
+      return new Response("Missing storage ID", { status: 400 });
+    }
+
+    const blobUrl = await ctx.storage.getUrl(storageId as any);
+    if (!blobUrl) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    // Fetch the blob and proxy it through
+    const blob = await fetch(blobUrl);
+    return new Response(blob.body, {
+      headers: {
+        "Content-Type": blob.headers.get("content-type") || "application/octet-stream",
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  }),
+});
+
 export default http;
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -253,7 +283,7 @@ function renderSummary(
   const modelRows = aggregateByModel(activity);
   const monthlyTotal = s.openrouterUsed30d + s.openaiCostMtd + s.gcpEstimateMo;
 
-  let text = `CLAW TEAMMATE — COST SUMMARY\n`;
+  let text = `DYNOCLAW — COST SUMMARY\n`;
   text += `Updated: ${new Date(s.fetchedAt).toUTCString()}\n\n`;
   text += `MONTHLY ESTIMATE: ${usd(monthlyTotal)}\n\n`;
   text += `OpenRouter balance: ${usd(s.openrouterBalance)}\n`;

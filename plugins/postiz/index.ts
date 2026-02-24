@@ -68,6 +68,38 @@ const postizPlugin = {
       },
     });
 
+    // ── Ensure image URL has a file extension (Postiz/Twitter requires it) ──
+    // Convex storage URLs have no extension — rewrite to the HTTP proxy route
+    // that serves the same blob at /storage/{id}.{ext}
+    async function ensureImageExtension(url: string): Promise<string> {
+      const parsed = new URL(url);
+      if (/\.(png|jpg|jpeg|gif|webp|mp4)$/i.test(parsed.pathname)) return url;
+
+      // Detect Convex storage URLs: .../api/storage/{id}
+      const convexMatch = parsed.pathname.match(/\/api\/storage\/([a-f0-9-]+)$/);
+      if (convexMatch) {
+        // Determine extension from content-type
+        let ext = "png";
+        try {
+          const res = await fetch(url, { method: "HEAD" });
+          const ct = res.headers.get("content-type") || "";
+          const extMap: Record<string, string> = {
+            "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif",
+            "image/webp": "webp", "video/mp4": "mp4",
+          };
+          ext = extMap[ct] || "png";
+        } catch { /* default to png */ }
+
+        // Rewrite to Convex HTTP proxy: https://{site}/storage/{id}.{ext}
+        const siteUrl = parsed.origin.replace(".convex.cloud", ".convex.site");
+        return `${siteUrl}/storage/${convexMatch[1]}.${ext}`;
+      }
+
+      // Non-Convex URL without extension — append query param as best-effort
+      parsed.searchParams.set("filename", "image.png");
+      return parsed.toString();
+    }
+
     // ── Create a post (defaults to draft) ───────────────────────────
     pluginApi.registerTool({
       name: "postiz_create_post",
@@ -116,12 +148,15 @@ const postizPlugin = {
           const postType = params.postType || "post";
           const ids = params.integrationIds.split(",").map((s: string) => s.trim());
           const platforms = params.platformTypes.split(",").map((s: string) => s.trim());
-          const images = params.imageUrls && params.imageUrls.trim() !== ""
-            ? params.imageUrls.split(",").map((s: string, idx: number) => ({
-                id: `img-${Date.now()}-${idx}`,
-                path: s.trim(),
-              }))
+          const rawUrls = params.imageUrls && params.imageUrls.trim() !== ""
+            ? params.imageUrls.split(",").map((s: string) => s.trim())
             : [];
+          const images = await Promise.all(
+            rawUrls.map(async (url: string, idx: number) => ({
+              id: `img-${Date.now()}-${idx}`,
+              path: await ensureImageExtension(url),
+            }))
+          );
 
           // Build platform-specific settings
           function buildSettings(platform: string) {
