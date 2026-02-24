@@ -2,7 +2,7 @@
 
 ## Vision
 
-Turn claw-teammate into a paid product: a pre-configured AI teammate that users deploy in their own cloud. They bring their own API keys, own their infra, and their data stays with them.
+Turn dynoclaw into a paid product: a pre-configured AI teammate that users deploy in their own cloud. They bring their own API keys, own their infra, and their data stays with them.
 
 ---
 
@@ -64,7 +64,7 @@ image_generate / video_generate
 
 ## Phase 1: Multi-Cloud CLI Installer
 
-**Goal:** `npx create-claw-teammate` — interactive setup that provisions everything.
+**Goal:** `npx create-dynoclaw` — interactive setup that provisions everything.
 
 - Interactive wizard: pick cloud (GCP / AWS / DigitalOcean / Docker self-hosted)
 - Guided API key setup (auto-opens browser for Gemini free tier, BotFather, etc.)

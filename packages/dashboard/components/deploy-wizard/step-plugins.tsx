@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { PLUGIN_REGISTRY } from "@claw-teammate/shared";
+import { PLUGIN_REGISTRY } from "@dynoclaw/shared";
 import type { WizardState } from "@/app/(dashboard)/deploy/page";
 
 interface Props {

@@ -1,6 +1,6 @@
 # Convex Functions
 
-Backend functions for the claw-teammate cost tracking dashboard and knowledge base.
+Backend functions for the dynoclaw cost tracking dashboard and knowledge base.
 
 ## Modules
 

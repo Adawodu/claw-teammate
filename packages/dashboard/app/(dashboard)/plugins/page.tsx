@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PLUGIN_REGISTRY } from "@claw-teammate/shared";
+import { PLUGIN_REGISTRY } from "@dynoclaw/shared";
 import { useState, useCallback } from "react";
 import { RotateCw } from "lucide-react";
 

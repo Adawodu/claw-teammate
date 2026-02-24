@@ -1,5 +1,5 @@
 {
-  "name": "@claw-teammate/dashboard",
+  "name": "@dynoclaw/dashboard",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@claw-teammate/shared": "*",
+    "@dynoclaw/shared": "*",
     "@clerk/nextjs": "^6.0.0",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.0",

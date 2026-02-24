@@ -8,7 +8,7 @@ import { StepPlugins } from "@/components/deploy-wizard/step-plugins";
 import { StepSkills } from "@/components/deploy-wizard/step-skills";
 import { StepApiKeys } from "@/components/deploy-wizard/step-api-keys";
 import { StepConfirm } from "@/components/deploy-wizard/step-confirm";
-import type { BrandingConfig, ModelsConfig } from "@claw-teammate/shared";
+import type { BrandingConfig, ModelsConfig } from "@dynoclaw/shared";
 
 export interface WizardState {
   gcpProjectId: string;

@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
-import type { PresetConfig } from "@claw-teammate/shared";
+import type { PresetConfig } from "@dynoclaw/shared";
 
-export { BUILT_IN_PRESETS } from "@claw-teammate/shared";
-import { BUILT_IN_PRESETS } from "@claw-teammate/shared";
+export { BUILT_IN_PRESETS } from "@dynoclaw/shared";
+import { BUILT_IN_PRESETS } from "@dynoclaw/shared";
 
 export async function loadPreset(source: string): Promise<PresetConfig> {
   // Built-in preset name

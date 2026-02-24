@@ -18,9 +18,9 @@ convex/_generated/
 DOCUMENTATION/linkedin-article*.md
 
 # CLI package build artifacts
-packages/create-claw-teammate/dist/
-packages/create-claw-teammate/plugin-files/
-packages/create-claw-teammate/skill-files/
+packages/create-dynoclaw/dist/
+packages/create-dynoclaw/plugin-files/
+packages/create-dynoclaw/skill-files/
 
 # Next.js build output
 .next/

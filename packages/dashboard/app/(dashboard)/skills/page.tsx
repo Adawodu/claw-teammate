@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SKILL_REGISTRY } from "@claw-teammate/shared";
+import { SKILL_REGISTRY } from "@dynoclaw/shared";
 import { useState, useCallback } from "react";
 import { RotateCw } from "lucide-react";
 import type { Id } from "@convex/_generated/dataModel";

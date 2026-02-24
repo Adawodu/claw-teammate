@@ -14,7 +14,7 @@ function parseArgs(args: string[]): { preset?: string; dryRun: boolean } {
       dryRun = true;
     } else if (args[i] === "--help" || args[i] === "-h") {
       console.log(`
-Usage: create-claw-teammate [options]
+Usage: create-dynoclaw [options]
 
 Options:
   --preset <path|url>  Load a preset configuration (file, URL, or built-in name)
@@ -22,10 +22,10 @@ Options:
   --help, -h           Show this help message
 
 Examples:
-  npx create-claw-teammate
-  npx create-claw-teammate --preset social-media-manager
-  npx create-claw-teammate --preset ./my-preset.json
-  npx create-claw-teammate --dry-run
+  npx create-dynoclaw
+  npx create-dynoclaw --preset social-media-manager
+  npx create-dynoclaw --preset ./my-preset.json
+  npx create-dynoclaw --dry-run
 `);
       process.exit(0);
     }

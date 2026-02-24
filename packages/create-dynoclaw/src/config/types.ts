@@ -9,4 +9,4 @@ export type {
   SkillMeta,
   PresetConfig,
   CloudDeployer,
-} from "@claw-teammate/shared";
+} from "@dynoclaw/shared";

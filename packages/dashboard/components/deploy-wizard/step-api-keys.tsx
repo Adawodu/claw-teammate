@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
-import { getRequiredApiKeys } from "@claw-teammate/shared";
+import { getRequiredApiKeys } from "@dynoclaw/shared";
 import { useState } from "react";
 import type { WizardState } from "@/app/(dashboard)/deploy/page";
 

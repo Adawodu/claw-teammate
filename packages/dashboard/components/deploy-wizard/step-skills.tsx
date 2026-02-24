@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { SKILL_REGISTRY } from "@claw-teammate/shared";
+import { SKILL_REGISTRY } from "@dynoclaw/shared";
 import type { WizardState } from "@/app/(dashboard)/deploy/page";
 
 interface Props {

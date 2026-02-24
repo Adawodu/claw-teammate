@@ -13,7 +13,7 @@ import {
   createInstance,
 } from "@/lib/gcp-rest";
 import { maskApiKey } from "@/lib/formatters";
-import { SKILL_REGISTRY, PLUGIN_REGISTRY } from "@claw-teammate/shared";
+import { SKILL_REGISTRY, PLUGIN_REGISTRY } from "@dynoclaw/shared";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
@@ -254,7 +254,7 @@ function generateWebStartupScript(config: {
 
   const geminiAlias = "\nGEMINI_API_KEY=${GOOGLE_AI_API_KEY}";
 
-  const repoBase = "https://raw.githubusercontent.com/adawodu/claw-teammate/main";
+  const repoBase = "https://raw.githubusercontent.com/Adawodu/dynoclaw/main";
 
   const pluginDownloads = config.enabledPlugins
     .map(

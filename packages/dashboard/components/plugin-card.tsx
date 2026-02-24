@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import type { PluginMeta } from "@claw-teammate/shared";
+import type { PluginMeta } from "@dynoclaw/shared";
 
 interface PluginCardProps {
   plugin: PluginMeta;

@@ -1,5 +1,5 @@
 {
-  "name": "claw-teammate",
+  "name": "dynoclaw",
   "version": "1.0.0",
   "private": true,
   "workspaces": [
@@ -9,8 +9,8 @@
   "scripts": {
     "convex:dev": "npx convex dev",
     "convex:deploy": "npx convex deploy",
-    "dashboard:dev": "npm run dev --workspace=@claw-teammate/dashboard",
-    "dashboard:build": "npm run build --workspace=@claw-teammate/dashboard"
+    "dashboard:dev": "npm run dev --workspace=@dynoclaw/dashboard",
+    "dashboard:build": "npm run build --workspace=@dynoclaw/dashboard"
   },
   "dependencies": {
     "convex": "^1.21.0"

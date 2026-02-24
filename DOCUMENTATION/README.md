@@ -1,4 +1,4 @@
-# claw-teammate Documentation
+# dynoclaw Documentation
 
 ## Documents
 
@@ -18,4 +18,4 @@
 
 ## Project Summary
 
-**claw-teammate** is an AI assistant deployed as an OpenClaw gateway on a single GCP Compute Engine VM. It communicates via Telegram, routes requests through OpenRouter (free tier) with Anthropic Claude fallback, and integrates with Gmail, GitHub, and Beehiiv in a safe, human-in-the-loop manner (drafts and PRs only).
+**dynoclaw** is an AI assistant deployed as an OpenClaw gateway on a single GCP Compute Engine VM. It communicates via Telegram, routes requests through OpenRouter (free tier) with Anthropic Claude fallback, and integrates with Gmail, GitHub, and Beehiiv in a safe, human-in-the-loop manner (drafts and PRs only).

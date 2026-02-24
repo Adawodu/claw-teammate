@@ -2,4 +2,4 @@ export {
   PLUGIN_REGISTRY,
   getPluginById,
   getRequiredApiKeys,
-} from "@claw-teammate/shared";
+} from "@dynoclaw/shared";

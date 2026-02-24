@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Check, X } from "lucide-react";
 import { useState } from "react";
-import type { SkillMeta } from "@claw-teammate/shared";
+import type { SkillMeta } from "@dynoclaw/shared";
 
 interface SkillCardProps {
   skill: SkillMeta;
