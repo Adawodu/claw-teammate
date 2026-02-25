@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DollarSign } from "lucide-react";
 import { ago } from "@/lib/formatters";
 import Link from "next/link";
+import { CostExplainer } from "@/components/cost-explainer";
 
 export default function CostsPage() {
   const deployments = useQuery(api.deployments.list);
@@ -25,6 +26,9 @@ export default function CostsPage() {
     api.costs.recentActivity,
     deployment ? { days: 30 } : "skip"
   );
+
+  const primaryModel = deployment?.models?.primary;
+  const fallbackModels = deployment?.models?.fallbacks;
 
   if (deployments === undefined) {
     return (
@@ -92,9 +96,22 @@ export default function CostsPage() {
         )}
       </div>
 
-      <CostCards snapshot={snapshot ?? null} />
+      <CostExplainer
+        primaryModel={primaryModel}
+        fallbackModels={fallbackModels}
+      />
+
+      <CostCards
+        snapshot={snapshot ?? null}
+        activity={activity ?? []}
+        fallbackModels={fallbackModels}
+      />
       <CostChart activity={activity ?? []} />
-      <ModelBreakdownTable activity={activity ?? []} />
+      <ModelBreakdownTable
+        activity={activity ?? []}
+        primaryModel={primaryModel}
+        fallbackModels={fallbackModels}
+      />
     </div>
   );
 }
