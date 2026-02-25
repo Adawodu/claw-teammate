@@ -24,10 +24,7 @@ export const BUILT_IN_PRESETS: Record<string, PresetConfig> = {
     },
     models: {
       primary: "google/gemini-2.5-flash",
-      fallbacks: [
-        "anthropic/claude-sonnet-4-5-20250929",
-        "openai/gpt-4o-mini",
-      ],
+      fallbacks: ["openai/gpt-4o-mini"],
     },
   },
   "content-creator": {
@@ -53,10 +50,7 @@ export const BUILT_IN_PRESETS: Record<string, PresetConfig> = {
     },
     models: {
       primary: "google/gemini-2.5-flash",
-      fallbacks: [
-        "anthropic/claude-sonnet-4-5-20250929",
-        "openai/gpt-4o-mini",
-      ],
+      fallbacks: ["openai/gpt-4o-mini"],
     },
   },
   "full-stack": {
@@ -82,10 +76,7 @@ export const BUILT_IN_PRESETS: Record<string, PresetConfig> = {
     },
     models: {
       primary: "google/gemini-2.5-flash",
-      fallbacks: [
-        "anthropic/claude-sonnet-4-5-20250929",
-        "openai/gpt-4o-mini",
-      ],
+      fallbacks: ["openai/gpt-4o-mini"],
     },
   },
 };

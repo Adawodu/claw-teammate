@@ -7,7 +7,7 @@
 #   - Secrets already created in Secret Manager:
 #       telegram-bot-token, anthropic-api-key, google-ai-api-key,
 #       openai-api-key, convex-url, beehiiv-publication-id
-#       (gmail-credentials, github-token, beehiiv-api-key, postiz-url, postiz-api-key as needed)
+#       (gmail-credentials, github-token, github-default-owner, beehiiv-api-key, postiz-url, postiz-api-key as needed)
 #
 # Usage:
 #   GCP_PROJECT=my-project bash infra/gcp/deploy-openclaw.sh
@@ -138,9 +138,10 @@ openclaw config set channels.telegram.dmPolicy pairing
 openclaw config set channels.telegram.groupPolicy disabled
 
 # Model fallback chain: direct provider APIs (no OpenRouter)
+# Claude is NOT in the auto-fallback chain (saves ~$44/mo). The Anthropic API key
+# is still in /etc/openclaw.env so Claude can be used on-demand via manual requests.
 GOOGLE_AI_API_KEY="${GOOGLE_AI_API_KEY}" openclaw models set google/gemini-2.5-flash
 openclaw models fallbacks clear
-ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" openclaw models fallbacks add anthropic/claude-sonnet-4-5-20250929
 OPENAI_API_KEY="${OPENAI_API_KEY}" openclaw models fallbacks add openai/gpt-4o-mini
 
 # Generate a gateway auth token on first run only
@@ -271,6 +272,25 @@ install_video_gen_plugin() {
     -- "sudo cp /tmp/video-gen-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
 }
 
+install_github_plugin() {
+  local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/github"
+  local PLUGIN_DEST="/root/.openclaw/extensions/github"
+
+  echo "==> Installing GitHub plugin files..."
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo mkdir -p ${PLUGIN_DEST} && mkdir -p /tmp/github-plugin"
+  gcloud compute scp \
+    "${PLUGIN_SRC}/package.json" \
+    "${PLUGIN_SRC}/index.ts" \
+    "${PLUGIN_SRC}/openclaw.plugin.json" \
+    "${VM_NAME}:/tmp/github-plugin/" \
+    --zone="${ZONE}" --project="${PROJECT}"
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo cp /tmp/github-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
+}
+
 install_image_gen_plugin() {
   local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/image-gen"
   local PLUGIN_DEST="/root/.openclaw/extensions/image-gen"
@@ -295,7 +315,7 @@ install_image_gen_plugin() {
 # one shot. This avoids the global validation issue with `openclaw config set`.
 configure_all_plugins() {
   echo "==> Fetching plugin secrets..."
-  local CONVEX_URL POSTIZ_URL POSTIZ_API_KEY BEEHIIV_API_KEY BEEHIIV_PUB_ID GOOGLE_AI_API_KEY OPENAI_API_KEY DRIVE_FOLDER_ID DRIVE_CLIENT_ID DRIVE_CLIENT_SECRET DRIVE_REFRESH_TOKEN
+  local CONVEX_URL POSTIZ_URL POSTIZ_API_KEY BEEHIIV_API_KEY BEEHIIV_PUB_ID GOOGLE_AI_API_KEY OPENAI_API_KEY DRIVE_FOLDER_ID DRIVE_CLIENT_ID DRIVE_CLIENT_SECRET DRIVE_REFRESH_TOKEN GITHUB_TOKEN GITHUB_DEFAULT_OWNER
   CONVEX_URL="$(gcloud secrets versions access latest --secret=convex-url --project="${PROJECT}")"
   POSTIZ_URL="$(gcloud secrets versions access latest --secret=postiz-url --project="${PROJECT}")"
   POSTIZ_API_KEY="$(gcloud secrets versions access latest --secret=postiz-api-key --project="${PROJECT}")"
@@ -307,6 +327,8 @@ configure_all_plugins() {
   DRIVE_CLIENT_ID="$(gcloud secrets versions access latest --secret=drive-oauth-client-id --project="${PROJECT}" || true)"
   DRIVE_CLIENT_SECRET="$(gcloud secrets versions access latest --secret=drive-oauth-client-secret --project="${PROJECT}" || true)"
   DRIVE_REFRESH_TOKEN="$(gcloud secrets versions access latest --secret=drive-oauth-refresh-token --project="${PROJECT}" || true)"
+  GITHUB_TOKEN="$(gcloud secrets versions access latest --secret=github-token --project="${PROJECT}" || true)"
+  GITHUB_DEFAULT_OWNER="$(gcloud secrets versions access latest --secret=github-default-owner --project="${PROJECT}" || echo "Adawodu")"
 
   echo "==> Patching openclaw.json with plugin configs..."
   # Build a node script that reads current config and merges plugin entries
@@ -321,8 +343,13 @@ config.plugins.entries = Object.assign(config.plugins.entries || {}, {
   "postiz": { enabled: true, config: { postizUrl: process.env.POSTIZ_URL, postizApiKey: process.env.POSTIZ_API_KEY } },
   "beehiiv": { enabled: true, config: { beehiivApiKey: process.env.BEEHIIV_API_KEY, beehiivPublicationId: process.env.BEEHIIV_PUB_ID } },
   "video-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveClientId: process.env.DRIVE_CLIENT_ID || undefined, driveClientSecret: process.env.DRIVE_CLIENT_SECRET || undefined, driveRefreshToken: process.env.DRIVE_REFRESH_TOKEN || undefined } },
-  "image-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveClientId: process.env.DRIVE_CLIENT_ID || undefined, driveClientSecret: process.env.DRIVE_CLIENT_SECRET || undefined, driveRefreshToken: process.env.DRIVE_REFRESH_TOKEN || undefined } }
+  "image-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveClientId: process.env.DRIVE_CLIENT_ID || undefined, driveClientSecret: process.env.DRIVE_CLIENT_SECRET || undefined, driveRefreshToken: process.env.DRIVE_REFRESH_TOKEN || undefined } },
+  "github": { enabled: true, config: { githubToken: process.env.GITHUB_TOKEN, defaultOwner: process.env.GITHUB_DEFAULT_OWNER || "Adawodu" } }
 });
+// Ensure all plugins are in the allowlist
+const allPlugins = ["postiz", "convex-knowledge", "image-gen", "video-gen", "beehiiv", "telegram", "twitter-research", "github"];
+config.plugins.allow = config.plugins.allow || [];
+for (const p of allPlugins) { if (!config.plugins.allow.includes(p)) config.plugins.allow.push(p); }
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 console.log("Plugin configs written successfully");
 NODESCRIPT
@@ -330,7 +357,7 @@ NODESCRIPT
 
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo CONVEX_URL='${CONVEX_URL}' POSTIZ_URL='${POSTIZ_URL}' POSTIZ_API_KEY='${POSTIZ_API_KEY}' BEEHIIV_API_KEY='${BEEHIIV_API_KEY}' BEEHIIV_PUB_ID='${BEEHIIV_PUB_ID}' GOOGLE_AI_API_KEY='${GOOGLE_AI_API_KEY}' OPENAI_API_KEY='${OPENAI_API_KEY}' DRIVE_FOLDER_ID='${DRIVE_FOLDER_ID}' DRIVE_CLIENT_ID='${DRIVE_CLIENT_ID}' DRIVE_CLIENT_SECRET='${DRIVE_CLIENT_SECRET}' DRIVE_REFRESH_TOKEN='${DRIVE_REFRESH_TOKEN}' node -e '${PATCH_SCRIPT}'"
+    -- "sudo CONVEX_URL='${CONVEX_URL}' POSTIZ_URL='${POSTIZ_URL}' POSTIZ_API_KEY='${POSTIZ_API_KEY}' BEEHIIV_API_KEY='${BEEHIIV_API_KEY}' BEEHIIV_PUB_ID='${BEEHIIV_PUB_ID}' GOOGLE_AI_API_KEY='${GOOGLE_AI_API_KEY}' OPENAI_API_KEY='${OPENAI_API_KEY}' DRIVE_FOLDER_ID='${DRIVE_FOLDER_ID}' DRIVE_CLIENT_ID='${DRIVE_CLIENT_ID}' DRIVE_CLIENT_SECRET='${DRIVE_CLIENT_SECRET}' DRIVE_REFRESH_TOKEN='${DRIVE_REFRESH_TOKEN}' GITHUB_TOKEN='${GITHUB_TOKEN}' GITHUB_DEFAULT_OWNER='${GITHUB_DEFAULT_OWNER}' node -e '${PATCH_SCRIPT}'"
 
   echo "==> Restarting OpenClaw..."
   gcloud compute ssh "${VM_NAME}" \
@@ -400,6 +427,7 @@ install_postiz_plugin
 install_beehiiv_plugin
 install_video_gen_plugin
 install_image_gen_plugin
+install_github_plugin
 configure_all_plugins
 install_skills
 
