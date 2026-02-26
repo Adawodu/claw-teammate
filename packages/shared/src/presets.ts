@@ -12,6 +12,7 @@ export const BUILT_IN_PRESETS: Record<string, PresetConfig> = {
       "image-gen": true,
       "video-gen": true,
       "convex-knowledge": true,
+      "web-tools": true,
       beehiiv: false,
     },
     skills: {
@@ -38,6 +39,7 @@ export const BUILT_IN_PRESETS: Record<string, PresetConfig> = {
       "image-gen": true,
       "video-gen": true,
       "convex-knowledge": true,
+      "web-tools": true,
       beehiiv: true,
     },
     skills: {
@@ -64,6 +66,7 @@ export const BUILT_IN_PRESETS: Record<string, PresetConfig> = {
       "image-gen": true,
       "video-gen": true,
       "convex-knowledge": true,
+      "web-tools": true,
       beehiiv: true,
     },
     skills: {
