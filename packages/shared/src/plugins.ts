@@ -142,6 +142,13 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     ],
   },
   {
+    id: "web-tools",
+    name: "Web Tools",
+    description: "Crawl websites and extract text from PDF files",
+    requiredKeys: [],
+    optionalKeys: [],
+  },
+  {
     id: "video-gen",
     name: "Video Generation",
     description: "Generate videos using Gemini Veo with persistent storage",

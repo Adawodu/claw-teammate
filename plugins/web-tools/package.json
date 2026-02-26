@@ -1,0 +1,11 @@
+{
+  "name": "web-tools",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.48",
+    "cheerio": "^1.0.0",
+    "pdf-parse": "^1.1.1"
+  }
+}
