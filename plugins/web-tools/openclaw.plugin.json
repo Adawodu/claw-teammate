@@ -1,6 +1,9 @@
 {
   "id": "web-tools",
   "name": "Web Tools",
-  "version": "1.0.0",
-  "description": "Crawl websites and extract text from PDFs"
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  }
 }
