@@ -337,6 +337,62 @@ const dynosistPlugin = {
         return json({ files, count: files.length, directory: dir });
       },
     });
+
+    // ── Tool 4: Search Emails ──────────────────────────────────────
+
+    pluginApi.registerTool({
+      name: "dynosist_search_emails",
+      label: "Search Gmail",
+      description:
+        "Search Gmail using standard query syntax. Supports from:, to:, subject:, after:, before:, " +
+        "has:attachment, is:unread, label:, in:inbox/sent. Example: 'from:john@example.com after:2026/02/01'",
+      parameters: Type.Object({
+        query: Type.String({
+          description:
+            "Gmail search query — supports from:, to:, subject:, after:, before:, has:attachment, " +
+            "is:unread, label:, in:inbox/sent. Example: 'from:john@example.com after:2026/02/01'",
+        }),
+        maxResults: Type.Optional(
+          Type.Number({ description: "Max results (default 20, max 100)" }),
+        ),
+      }),
+      async execute(_toolCallId: string, params: any) {
+        const max = Math.min(Math.max(params.maxResults || 20, 1), 100);
+        const accessToken = await getGmailAccessToken(clientId, clientSecret, refreshToken);
+
+        const listResult = await gmailApi(
+          accessToken,
+          `messages?q=${encodeURIComponent(params.query)}&maxResults=${max}`,
+        );
+        const messages = listResult.messages || [];
+
+        if (messages.length === 0) {
+          return json({ results: [], count: 0, query: params.query, message: "No emails found matching your query." });
+        }
+
+        const results = await Promise.all(
+          messages.map(async (m: any) => {
+            const msg = await gmailApi(
+              accessToken,
+              `messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
+            );
+            const headers = msg.payload?.headers || [];
+            const getHeader = (name: string) =>
+              headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || "";
+            return {
+              id: m.id,
+              from: getHeader("From"),
+              to: getHeader("To"),
+              subject: getHeader("Subject"),
+              date: getHeader("Date"),
+              snippet: msg.snippet || "",
+            };
+          }),
+        );
+
+        return json({ results, count: results.length, query: params.query });
+      },
+    });
   },
 };
 
