@@ -1,0 +1,14 @@
+{
+  "id": "dynoclux",
+  "name": "DynoClux Privacy Enforcement",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "gmailClientId": { "type": "string" },
+      "gmailClientSecret": { "type": "string" },
+      "gmailRefreshToken": { "type": "string" },
+      "convexUrl": { "type": "string" }
+    },
+    "required": ["gmailClientId", "gmailClientSecret", "gmailRefreshToken", "convexUrl"]
+  }
+}

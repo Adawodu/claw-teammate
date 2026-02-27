@@ -1,0 +1,13 @@
+{
+  "id": "dynosist",
+  "name": "DynoSist Email Assistant",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "gmailClientId": { "type": "string" },
+      "gmailClientSecret": { "type": "string" },
+      "gmailRefreshToken": { "type": "string" }
+    },
+    "required": ["gmailClientId", "gmailClientSecret", "gmailRefreshToken"]
+  }
+}

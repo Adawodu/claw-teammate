@@ -68,6 +68,7 @@ export const BUILT_IN_PRESETS: Record<string, PresetConfig> = {
       "convex-knowledge": true,
       "web-tools": true,
       beehiiv: true,
+      dynoclux: true,
     },
     skills: {
       "daily-posts": true,
@@ -76,6 +77,7 @@ export const BUILT_IN_PRESETS: Record<string, PresetConfig> = {
       "daily-briefing": true,
       "newsletter-writer": true,
       "job-hunter": true,
+      dynoclux: true,
     },
     models: {
       primary: "google/gemini-2.5-flash",

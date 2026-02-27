@@ -187,6 +187,94 @@ export default defineSchema({
     .index("by_clerkId", ["clerkId"])
     .index("by_role", ["role"]),
 
+  // ── Privacy / DynoClux tables ─────────────────────────────────────
+
+  privacyRequests: defineTable({
+    userId: v.optional(v.string()),
+    senderEmail: v.string(),
+    senderDomain: v.string(),
+    requestType: v.union(v.literal("unsubscribe"), v.literal("data_deletion")),
+    method: v.optional(v.string()),
+    requestedAt: v.number(),
+    deadline: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("complied"),
+      v.literal("violated"),
+    ),
+    evidence: v.optional(v.string()),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_senderDomain", ["senderDomain"])
+    .index("by_userId_status", ["userId", "status"])
+    .index("by_deadline", ["deadline"]),
+
+  privacyViolations: defineTable({
+    userId: v.optional(v.string()),
+    requestId: v.id("privacyRequests"),
+    senderEmail: v.string(),
+    senderDomain: v.string(),
+    violationType: v.union(v.literal("canspam"), v.literal("ccpa")),
+    deadlineDate: v.number(),
+    violationDate: v.number(),
+    messageIds: v.array(v.string()),
+    headers: v.optional(v.string()),
+    status: v.union(
+      v.literal("detected"),
+      v.literal("notice_drafted"),
+      v.literal("notice_sent"),
+      v.literal("resolved"),
+    ),
+    noticeDraft: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_requestId", ["requestId"])
+    .index("by_senderDomain", ["senderDomain"])
+    .index("by_userId_status", ["userId", "status"]),
+
+  inboxScans: defineTable({
+    userId: v.optional(v.string()),
+    scannedAt: v.number(),
+    totalMessages: v.number(),
+    uniqueSenders: v.number(),
+    senders: v.array(
+      v.object({
+        email: v.string(),
+        domain: v.string(),
+        count: v.number(),
+        hasUnsubscribe: v.boolean(),
+        latestDate: v.string(),
+        subjects: v.array(v.string()),
+        category: v.string(),
+      }),
+    ),
+    categoryBreakdown: v.object({
+      Essential: v.optional(v.number()),
+      Aggressor: v.optional(v.number()),
+      Marketing: v.optional(v.number()),
+      Lapsed: v.optional(v.number()),
+      Unknown: v.optional(v.number()),
+    }),
+  })
+    .index("by_scannedAt", ["scannedAt"])
+    .index("by_userId_scannedAt", ["userId", "scannedAt"]),
+
+  actionQueue: defineTable({
+    action: v.string(),
+    senderEmail: v.string(),
+    senderDomain: v.string(),
+    params: v.optional(v.any()),
+    status: v.string(),
+    result: v.optional(v.string()),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_createdAt", ["createdAt"])
+    .index("by_domain_action", ["senderDomain", "action"]),
+
   navLinks: defineTable({
     label: v.string(),
     href: v.string(),

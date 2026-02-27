@@ -425,6 +425,50 @@ export async function deleteRouter(
   }
 }
 
+export async function setInstanceMetadata(
+  token: string,
+  project: string,
+  zone: string,
+  name: string,
+  newItems: { key: string; value: string }[]
+): Promise<void> {
+  // 1. Get current instance to obtain metadata fingerprint
+  const instance = await getInstance(token, project, zone, name);
+  if (!instance) {
+    throw new Error(`Instance ${name} not found`);
+  }
+  const metadata = instance.metadata as {
+    fingerprint: string;
+    items?: { key: string; value: string }[];
+  };
+
+  // 2. Merge new items (replace existing keys, keep others)
+  const existingItems = metadata.items ?? [];
+  const newKeys = new Set(newItems.map((i) => i.key));
+  const mergedItems = [
+    ...existingItems.filter((i) => !newKeys.has(i.key)),
+    ...newItems,
+  ];
+
+  // 3. POST to setMetadata
+  const res = await gcpFetch(
+    `${COMPUTE_BASE}/projects/${project}/zones/${zone}/instances/${name}/setMetadata`,
+    token,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        fingerprint: metadata.fingerprint,
+        items: mergedItems,
+      }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(
+      await gcpError(res, `Failed to set metadata on instance ${name}`)
+    );
+  }
+}
+
 export async function getSerialPortOutput(
   token: string,
   project: string,

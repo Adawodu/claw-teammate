@@ -142,6 +142,65 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     ],
   },
   {
+    id: "dynoclux",
+    name: "DynoClux Privacy Enforcement",
+    description:
+      "Scan Gmail, unsubscribe from unwanted senders, track CAN-SPAM/CCPA deadlines, and enforce privacy rights",
+    requiredKeys: [
+      {
+        key: "gmailClientId",
+        secretName: "drive-oauth-client-id",
+        description: "Google OAuth client ID (shared with Drive)",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+      {
+        key: "gmailClientSecret",
+        secretName: "drive-oauth-client-secret",
+        description: "Google OAuth client secret (shared with Drive)",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+      {
+        key: "gmailRefreshToken",
+        secretName: "gmail-oauth-refresh-token",
+        description: "Gmail OAuth refresh token (gmail.modify scope)",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+      {
+        key: "convexUrl",
+        secretName: "convex-url",
+        description: "Convex deployment URL",
+        signupUrl: "https://convex.dev",
+      },
+    ],
+    optionalKeys: [],
+  },
+  {
+    id: "dynosist",
+    name: "DynoSist Email Assistant",
+    description: "Create Gmail drafts with file attachments, list drafts, and find local files",
+    requiredKeys: [
+      {
+        key: "gmailClientId",
+        secretName: "drive-oauth-client-id",
+        description: "Google OAuth client ID (shared with Drive)",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+      {
+        key: "gmailClientSecret",
+        secretName: "drive-oauth-client-secret",
+        description: "Google OAuth client secret (shared with Drive)",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+      {
+        key: "gmailRefreshToken",
+        secretName: "gmail-oauth-refresh-token",
+        description: "Gmail OAuth refresh token (gmail.modify scope)",
+        signupUrl: "https://console.cloud.google.com/apis/credentials",
+      },
+    ],
+    optionalKeys: [],
+  },
+  {
     id: "web-tools",
     name: "Web Tools",
     description: "Crawl websites and extract text from PDF files",

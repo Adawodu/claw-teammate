@@ -71,6 +71,10 @@ export function aggregateFallbackSpend(
   };
 }
 
+export function daysUntil(deadline: number): number {
+  return Math.ceil((deadline - Date.now()) / 86_400_000);
+}
+
 export function maskApiKey(value: string): string {
   if (value.length <= 8) return "****";
   return value.slice(0, 4) + "****" + value.slice(-4);

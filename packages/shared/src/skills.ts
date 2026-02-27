@@ -49,6 +49,23 @@ export const SKILL_REGISTRY: SkillMeta[] = [
     cronDescription: "On-demand only",
     requiredPlugins: [],
   },
+  {
+    id: "dynoclux",
+    name: "DynoClux Privacy Enforcement",
+    description:
+      "Scan inbox, unsubscribe, track CAN-SPAM/CCPA deadlines, detect violations, and draft compliance notices",
+    cron: null,
+    cronDescription: "On-demand only",
+    requiredPlugins: ["dynoclux"],
+  },
+  {
+    id: "dynosist",
+    name: "DynoSist Email Assistant",
+    description: "Compose Gmail drafts with file attachments via conversational interface",
+    cron: null,
+    cronDescription: "On-demand only",
+    requiredPlugins: ["dynosist"],
+  },
 ];
 
 export function getSkillById(id: string): SkillMeta | undefined {

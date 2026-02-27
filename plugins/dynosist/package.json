@@ -1,0 +1,9 @@
+{
+  "name": "dynosist",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.48"
+  }
+}

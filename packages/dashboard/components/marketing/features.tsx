@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Cloud, Puzzle, Zap, Shield } from "lucide-react";
+import { Cloud, Puzzle, Zap, Shield, Mail } from "lucide-react";
 
 const features = [
   {
@@ -25,6 +25,12 @@ const features = [
     title: "Enterprise Security",
     description:
       "API keys stored in GCP Secret Manager, Clerk auth, draft-only publishing, and full audit logs.",
+  },
+  {
+    icon: Mail,
+    title: "Email Assistant",
+    description:
+      "Draft emails with attachments via Telegram. DynoSist creates Gmail drafts — you review and send.",
   },
 ];
 

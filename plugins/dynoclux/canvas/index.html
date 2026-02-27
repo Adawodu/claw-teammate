@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DynoClux Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #0a0a0a; color: #e5e5e5; line-height: 1.5; padding: 1.5rem;
+    max-width: 1100px; margin: 0 auto;
+  }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .subtitle { font-size: 0.8rem; color: #737373; margin-bottom: 1.5rem; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid #262626; margin-bottom: 1.5rem; }
+  .tab {
+    padding: 0.6rem 1.2rem; cursor: pointer; font-size: 0.85rem; font-weight: 500;
+    color: #737373; border-bottom: 2px solid transparent; transition: all 0.2s;
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .tab:hover { color: #a3a3a3; }
+  .tab.active { color: #e5e5e5; border-bottom-color: #3b82f6; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Stats */
+  .stats-bar {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.75rem; margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: #171717; border: 1px solid #262626; border-radius: 8px;
+    padding: 1rem; text-align: center;
+  }
+  .stat-card .label { font-size: 0.7rem; color: #737373; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-card .value { font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem; }
+  .stat-card .value.green { color: #22c55e; }
+  .stat-card .value.red { color: #ef4444; }
+  .stat-card .value.yellow { color: #eab308; }
+  .stat-card .value.blue { color: #3b82f6; }
+  .stat-card .value.purple { color: #a855f7; }
+  .stat-card .value.orange { color: #f97316; }
+  .overdue-badge {
+    display: inline-block; background: #7f1d1d; color: #fca5a5; font-size: 0.65rem;
+    padding: 0.1rem 0.4rem; border-radius: 9999px; margin-left: 0.5rem; vertical-align: middle;
+  }
+
+  /* Category bar chart */
+  .cat-chart { margin-bottom: 1.5rem; }
+  .cat-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+  .cat-label { width: 90px; font-size: 0.75rem; color: #a3a3a3; text-align: right; flex-shrink: 0; }
+  .cat-bar-wrap { flex: 1; height: 24px; background: #171717; border-radius: 4px; overflow: hidden; position: relative; }
+  .cat-bar { height: 100%; border-radius: 4px; transition: width 0.5s ease; min-width: 2px; }
+  .cat-bar.Aggressor { background: #ef4444; }
+  .cat-bar.Marketing { background: #f97316; }
+  .cat-bar.Essential { background: #22c55e; }
+  .cat-bar.Lapsed { background: #737373; }
+  .cat-bar.Unknown { background: #3b82f6; }
+  .cat-count { width: 40px; font-size: 0.75rem; color: #a3a3a3; }
+
+  /* Tables */
+  .section-title { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+  .table-wrap { overflow-x: auto; border: 1px solid #262626; border-radius: 8px; max-height: 500px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  th { background: #171717; text-align: left; padding: 0.6rem 0.75rem; font-weight: 500; color: #a3a3a3; border-bottom: 1px solid #262626; position: sticky; top: 0; z-index: 1; }
+  td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #1a1a1a; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1a1a1a; }
+
+  /* Badges */
+  .badge {
+    display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem;
+    border-radius: 9999px; text-transform: capitalize;
+  }
+  .badge.Aggressor { background: #450a0a; color: #f87171; }
+  .badge.Marketing { background: #431407; color: #fb923c; }
+  .badge.Essential { background: #052e16; color: #4ade80; }
+  .badge.Lapsed { background: #262626; color: #a3a3a3; }
+  .badge.Unknown { background: #172554; color: #93c5fd; }
+  .badge.pending { background: #422006; color: #fbbf24; }
+  .badge.complied { background: #052e16; color: #4ade80; }
+  .badge.violated, .badge.detected { background: #450a0a; color: #f87171; }
+  .badge.notice_drafted { background: #1e1b4b; color: #a5b4fc; }
+  .badge.notice_sent { background: #172554; color: #93c5fd; }
+  .badge.resolved { background: #052e16; color: #4ade80; }
+
+  /* Filter */
+  .filter-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 0.3rem 0.8rem; font-size: 0.75rem; border-radius: 9999px; cursor: pointer;
+    border: 1px solid #333; background: transparent; color: #a3a3a3; transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: #555; color: #e5e5e5; }
+  .filter-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+  .empty { text-align: center; padding: 3rem; color: #525252; }
+  .refresh-note { font-size: 0.7rem; color: #525252; margin-top: 1rem; text-align: right; }
+  .alert-bar {
+    background: #450a0a; border: 1px solid #7f1d1d; border-radius: 8px;
+    padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; color: #fca5a5;
+  }
+  .scan-meta { font-size: 0.75rem; color: #525252; margin-bottom: 1rem; }
+
+  /* Action buttons */
+  .act-btn {
+    padding: 0.2rem 0.5rem; font-size: 0.68rem; font-weight: 600; border-radius: 4px;
+    cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap;
+  }
+  .act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .act-btn.unsub { background: #7f1d1d; color: #fca5a5; }
+  .act-btn.unsub:hover:not(:disabled) { background: #991b1b; }
+  .act-btn.track { background: #422006; color: #fbbf24; }
+  .act-btn.track:hover:not(:disabled) { background: #78350f; }
+  .act-btn.safe { background: #052e16; color: #4ade80; }
+  .act-btn.safe:hover:not(:disabled) { background: #14532d; }
+  .act-btn.block { background: #3b1f5e; color: #c4b5fd; }
+  .act-btn.block:hover:not(:disabled) { background: #4c2882; }
+  .act-btn.removal { background: #581c87; color: #e9d5ff; }
+  .act-btn.removal:hover:not(:disabled) { background: #6b21a8; }
+  .act-btn.archive { background: #1e3a5f; color: #93c5fd; }
+  .act-btn.archive:hover:not(:disabled) { background: #1e40af; }
+
+  .stale-banner { background: #422006; border: 1px solid #78350f; border-radius: 8px; padding: 0.6rem 1rem; margin-bottom: 1rem; font-size: 0.82rem; color: #fbbf24; }
+  .act-group { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+
+  .queue-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid #1a1a1a; font-size: 0.78rem; }
+  .queue-item:last-child { border-bottom: none; }
+  .badge.done { background: #052e16; color: #4ade80; }
+  .badge.error { background: #450a0a; color: #f87171; }
+  .badge.running { background: #172554; color: #93c5fd; }
+
+  /* Queue summary bar */
+  .queue-summary {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem;
+    background: #171717; border: 1px solid #262626; border-radius: 8px;
+    font-size: 0.8rem; color: #a3a3a3; flex-wrap: wrap;
+  }
+  .queue-summary .qs-stat { font-weight: 600; }
+  .queue-summary .qs-stat.green { color: #22c55e; }
+  .queue-summary .qs-stat.yellow { color: #eab308; }
+  .queue-summary .qs-stat.blue { color: #93c5fd; }
+  .queue-summary .qs-stat.red { color: #f87171; }
+  .queue-toggle {
+    padding: 0.2rem 0.6rem; font-size: 0.7rem; border-radius: 4px; cursor: pointer;
+    border: 1px solid #333; background: transparent; color: #a3a3a3; transition: all 0.15s;
+  }
+  .queue-toggle:hover { border-color: #555; color: #e5e5e5; }
+  .queue-clear {
+    padding: 0.2rem 0.6rem; font-size: 0.7rem; border-radius: 4px; cursor: pointer;
+    border: 1px solid #7f1d1d; background: transparent; color: #fca5a5; transition: all 0.15s;
+    margin-left: auto;
+  }
+  .queue-clear:hover { background: #450a0a; }
+
+  /* Bulk action bar */
+  .bulk-bar {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 1rem;
+    background: #171717; border: 1px solid #262626; border-left: 3px solid #3b82f6;
+    border-radius: 8px; margin-bottom: 1rem;
+  }
+  .bulk-bar .bulk-count { font-size: 0.85rem; font-weight: 600; color: #e5e5e5; white-space: nowrap; }
+
+  /* Sender table checkbox */
+  .sender-cb { width: 16px; height: 16px; cursor: pointer; accent-color: #3b82f6; }
+
+  @media (max-width: 640px) {
+    body { padding: 0.75rem; }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .stat-card .value { font-size: 1.4rem; }
+    .cat-label { width: 70px; }
+    .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; gap: 0; }
+    .bulk-bar { flex-direction: column; align-items: flex-start; }
+    .queue-item { flex-wrap: wrap; }
+    .act-btn { min-height: 36px; padding: 0.4rem 0.6rem; font-size: 0.75rem; }
+    .filter-btn { min-height: 36px; }
+    .sender-cb { width: 18px; height: 18px; }
+    /* Hide From (col 3) and Subjects (col 7) on mobile — checkbox is col 1 */
+    #senders-section table td:nth-child(3),
+    #senders-section table th:nth-child(3),
+    #senders-section table td:nth-child(7),
+    #senders-section table th:nth-child(7) { display: none; }
+  }
+</style>
+</head>
+<body>
+  <h1>DynoClux Dashboard</h1>
+  <p class="subtitle">Inbox intelligence + privacy enforcement</p>
+
+  <div id="alerts"></div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="complexity">Complexity Map</button>
+    <button class="tab" data-tab="privacy">Privacy Requests</button>
+    <button class="tab" data-tab="violations">Violations</button>
+  </div>
+
+  <!-- Tab 1: Complexity Map -->
+  <div id="tab-complexity" class="tab-panel active">
+    <div id="scan-meta" class="scan-meta"></div>
+    <div id="scan-stats" class="stats-bar"></div>
+    <div id="cat-chart" class="cat-chart"></div>
+    <div id="filter-row" class="filter-row"></div>
+    <div id="senders-section"></div>
+    <div id="queue-section"></div>
+  </div>
+
+  <!-- Tab 2: Privacy Requests -->
+  <div id="tab-privacy" class="tab-panel">
+    <div id="privacy-stats" class="stats-bar"></div>
+    <div id="requests-section"></div>
+  </div>
+
+  <!-- Tab 3: Violations -->
+  <div id="tab-violations" class="tab-panel">
+    <div id="violations-section"></div>
+  </div>
+
+  <p class="refresh-note">Last updated: <span id="updated">—</span></p>
+
+<script>
+const CONVEX_URL = "https://fortunate-seahorse-362.convex.cloud";
+let currentFilter = "All";
+let scanData = null;
+let queueData = [];
+// Bulk selection — keyed by domain so selection persists across filter changes
+const selectedRows = new Set();
+
+// Tab switching
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+  });
+});
+
+async function convexQuery(path, args = {}) {
+  const res = await fetch(CONVEX_URL + "/api/query", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path, args }),
+  });
+  if (!res.ok) throw new Error(`Query ${path} failed: ${res.status}`);
+  const data = await res.json();
+  return data.value;
+}
+
+async function convexMut(path, args = {}) {
+  const res = await fetch(CONVEX_URL + "/api/mutation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path, args }),
+  });
+  if (!res.ok) throw new Error(`Mutation ${path} failed: ${res.status}`);
+  const data = await res.json();
+  return data.value;
+}
+
+function fmtDate(ts) {
+  return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function fmtTime(ts) {
+  return new Date(ts).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+function daysUntil(deadline) {
+  return Math.ceil((deadline - Date.now()) / 86400000);
+}
+function badgeHtml(cls, label) {
+  return `<span class="badge ${cls}">${(label || cls).replace("_", " ")}</span>`;
+}
+
+function renderScanStats(scan) {
+  const cats = scan.categoryBreakdown || {};
+  document.getElementById("scan-meta").innerHTML = `Scanned ${fmtTime(scan.scannedAt)} &middot; ${scan.totalMessages} messages`;
+
+  document.getElementById("scan-stats").innerHTML = `
+    <div class="stat-card"><div class="label">Messages</div><div class="value blue">${scan.totalMessages}</div></div>
+    <div class="stat-card"><div class="label">Senders</div><div class="value">${scan.uniqueSenders}</div></div>
+    <div class="stat-card"><div class="label">Aggressors</div><div class="value red">${cats.Aggressor || 0}</div></div>
+    <div class="stat-card"><div class="label">Marketing</div><div class="value orange">${cats.Marketing || 0}</div></div>
+    <div class="stat-card"><div class="label">Essential</div><div class="value green">${cats.Essential || 0}</div></div>
+    <div class="stat-card"><div class="label">Unknown</div><div class="value blue">${cats.Unknown || 0}</div></div>
+  `;
+
+  // Category bar chart
+  const maxCount = Math.max(...Object.values(cats).map(Number), 1);
+  const catOrder = ["Aggressor", "Marketing", "Essential", "Lapsed", "Unknown"];
+  const chartHtml = catOrder
+    .filter(c => (cats[c] || 0) > 0)
+    .map(c => {
+      const count = cats[c] || 0;
+      const pct = (count / maxCount) * 100;
+      return `<div class="cat-row">
+        <div class="cat-label">${c}</div>
+        <div class="cat-bar-wrap"><div class="cat-bar ${c}" style="width:${pct}%"></div></div>
+        <div class="cat-count">${count}</div>
+      </div>`;
+    }).join("");
+  document.getElementById("cat-chart").innerHTML = chartHtml;
+
+  // Filter buttons
+  const allCats = ["All", ...catOrder.filter(c => (cats[c] || 0) > 0)];
+  document.getElementById("filter-row").innerHTML = allCats.map(c =>
+    `<button class="filter-btn ${c === currentFilter ? 'active' : ''}" data-cat="${c}">${c}</button>`
+  ).join("");
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentFilter = btn.dataset.cat;
+      renderSenderTable(scanData);
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+}
+
+// Store filtered senders so event handlers can look up by index
+let filteredSenders = [];
+
+function esc(str) {
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+async function handleActionClick(e) {
+  const btn = e.target.closest(".act-btn");
+  if (!btn || btn.disabled) return;
+  const idx = Number(btn.dataset.idx);
+  const s = filteredSenders[idx];
+  if (!s) return;
+
+  btn.disabled = true;
+  btn.textContent = "...";
+
+  try {
+    if (btn.classList.contains("safe")) {
+      await convexMut("inboxScans:markSafe", { senderDomain: s.domain });
+      btn.textContent = "Done";
+      setTimeout(() => refresh(), 500);
+    } else {
+      const action = btn.classList.contains("unsub") ? "unsubscribe"
+        : btn.classList.contains("track") ? "track_request"
+        : btn.classList.contains("removal") ? "request_removal"
+        : btn.classList.contains("block") ? "block"
+        : btn.classList.contains("archive") ? "archive"
+        : null;
+      if (!action) return;
+      await convexMut("actionQueue:create", { action, senderEmail: s.email, senderDomain: s.domain });
+      btn.textContent = "Queued";
+    }
+  } catch (err) {
+    btn.textContent = "Error";
+    console.error("Action failed:", err);
+  }
+}
+
+// Build a map: "domain:action" → best status from queue
+function buildQueueMap() {
+  const map = {};
+  // Priority: done > running > pending > error (show the most "complete" status)
+  const rank = { done: 4, running: 3, pending: 2, error: 1 };
+  for (const q of queueData) {
+    const key = q.senderDomain + ":" + q.action;
+    const existing = map[key];
+    if (!existing || (rank[q.status] || 0) > (rank[existing.status] || 0)) {
+      map[key] = q;
+    }
+  }
+  return map;
+}
+
+function actionBtn(queueMap, domain, action, cssClass, label, idx, show) {
+  if (!show) return "";
+  const entry = queueMap[domain + ":" + action];
+  if (entry) {
+    // Already in queue — show status badge instead of button
+    const statusLabels = { pending: "Pending", running: "Running", done: "Done", error: "Error" };
+    return `<span class="badge ${entry.status}">${label}: ${statusLabels[entry.status] || entry.status}</span>`;
+  }
+  return `<button class="act-btn ${cssClass}" data-idx="${idx}">${label}</button>`;
+}
+
+function renderBulkBar() {
+  let bar = document.getElementById("bulk-bar");
+  const count = selectedRows.size;
+  if (count === 0) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "bulk-bar";
+    bar.className = "bulk-bar";
+    const filterRow = document.getElementById("filter-row");
+    filterRow.parentNode.insertBefore(bar, filterRow.nextSibling);
+  }
+  bar.innerHTML = `
+    <span class="bulk-count">${count} selected</span>
+    <button class="act-btn unsub" id="bulk-unsub">Unsubscribe All</button>
+    <button class="act-btn removal" id="bulk-removal">Request Removal All</button>
+    <button class="act-btn block" id="bulk-block">Block All</button>
+    <button class="act-btn archive" id="bulk-archive">Archive All</button>
+    <button class="act-btn track" id="bulk-track">Track Compliance All</button>
+    <button class="act-btn safe" id="bulk-safe">Mark Safe All</button>
+  `;
+  document.getElementById("bulk-unsub").addEventListener("click", () => bulkAction("unsubscribe"));
+  document.getElementById("bulk-removal").addEventListener("click", () => bulkAction("request_removal"));
+  document.getElementById("bulk-block").addEventListener("click", () => bulkAction("block"));
+  document.getElementById("bulk-archive").addEventListener("click", () => bulkAction("archive"));
+  document.getElementById("bulk-track").addEventListener("click", () => bulkAction("track_request"));
+  document.getElementById("bulk-safe").addEventListener("click", () => bulkAction("safe"));
+}
+
+async function bulkAction(actionType) {
+  const queueMap = buildQueueMap();
+  const allSenders = scanData ? (scanData.senders || []) : [];
+  const domainToSender = {};
+  for (const s of allSenders) domainToSender[s.domain] = s;
+
+  const targets = [];
+  for (const domain of selectedRows) {
+    const s = domainToSender[domain];
+    if (!s) continue;
+    if (actionType === "unsubscribe" && !s.hasUnsubscribe) continue;
+    if (actionType === "request_removal" && s.hasUnsubscribe) continue;
+    if (actionType === "archive" && !queueMap[domain + ":unsubscribe"] && !queueMap[domain + ":request_removal"] && !queueMap[domain + ":block"]) continue;
+    if (actionType === "track_request" && !queueMap[domain + ":unsubscribe"] && !queueMap[domain + ":request_removal"] && !queueMap[domain + ":block"]) continue;
+    if (actionType === "safe" && s.category === "Essential") continue;
+    if (actionType !== "safe" && queueMap[domain + ":" + actionType]) continue;
+    targets.push(s);
+  }
+
+  if (targets.length === 0) return;
+
+  const btnId = actionType === "unsubscribe" ? "bulk-unsub" : actionType === "request_removal" ? "bulk-removal" : actionType === "block" ? "bulk-block" : actionType === "archive" ? "bulk-archive" : actionType === "track_request" ? "bulk-track" : "bulk-safe";
+  const btn = document.getElementById(btnId);
+
+  for (let i = 0; i < targets.length; i++) {
+    const s = targets[i];
+    if (btn) btn.textContent = `Processing ${i + 1} of ${targets.length}...`;
+    try {
+      if (actionType === "safe") {
+        await convexMut("inboxScans:markSafe", { senderDomain: s.domain });
+      } else {
+        await convexMut("actionQueue:create", { action: actionType, senderEmail: s.email, senderDomain: s.domain });
+      }
+    } catch (err) {
+      console.error("Bulk action failed for", s.domain, err);
+    }
+  }
+
+  selectedRows.clear();
+  refresh();
+}
+
+function handleCheckboxChange(e) {
+  const cb = e.target;
+  if (!cb.classList.contains("sender-cb")) return;
+  if (cb.dataset.domain === "__all__") {
+    // Select-all toggle
+    if (cb.checked) {
+      for (const s of filteredSenders) selectedRows.add(s.domain);
+    } else {
+      for (const s of filteredSenders) selectedRows.delete(s.domain);
+    }
+    // Update individual checkboxes
+    const section = document.getElementById("senders-section");
+    section.querySelectorAll(".sender-cb[data-domain]").forEach(c => {
+      if (c.dataset.domain !== "__all__") c.checked = cb.checked;
+    });
+  } else {
+    if (cb.checked) selectedRows.add(cb.dataset.domain);
+    else selectedRows.delete(cb.dataset.domain);
+    // Update select-all state
+    const allCb = document.querySelector('.sender-cb[data-domain="__all__"]');
+    if (allCb) allCb.checked = filteredSenders.every(s => selectedRows.has(s.domain));
+  }
+  renderBulkBar();
+}
+
+function renderSenderTable(scan) {
+  if (!scan) return;
+  const senders = scan.senders || [];
+  filteredSenders = currentFilter === "All" ? senders : senders.filter(s => s.category === currentFilter);
+
+  if (filteredSenders.length === 0) {
+    document.getElementById("senders-section").innerHTML = `<div class="empty">No senders in this category.</div>`;
+    const bar = document.getElementById("bulk-bar");
+    if (bar) bar.remove();
+    return;
+  }
+
+  const queueMap = buildQueueMap();
+  const allChecked = filteredSenders.every(s => selectedRows.has(s.domain));
+
+  const rows = filteredSenders.map((s, i) => {
+    const unsubEntry = queueMap[s.domain + ":unsubscribe"];
+    const removalEntry = queueMap[s.domain + ":request_removal"];
+    const blockEntry = queueMap[s.domain + ":block"];
+    const archiveEntry = queueMap[s.domain + ":archive"];
+    const trackEntry = queueMap[s.domain + ":track_request"];
+    const trackDone = trackEntry && trackEntry.status === "done";
+    // Show Track Compliance if ANY action (unsub/removal/block) is queued for this domain and tracking not already done
+    const hasAnyAction = !!unsubEntry || !!removalEntry || !!blockEntry;
+    const showTrack = hasAnyAction && !trackDone;
+    // Show Archive after unsub, removal, or block is queued and archive not already done
+    const archiveDone = archiveEntry && archiveEntry.status === "done";
+    const showArchive = hasAnyAction && !archiveDone;
+    const showSafe = s.category !== "Essential";
+    return `<tr>
+    <td><input type="checkbox" class="sender-cb" data-domain="${esc(s.domain)}" ${selectedRows.has(s.domain) ? "checked" : ""}></td>
+    <td>${esc(s.domain)}</td>
+    <td style="font-family:monospace;font-size:0.72rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.email)}</td>
+    <td style="text-align:center;font-weight:600">${s.count}</td>
+    <td>${badgeHtml(s.category)}</td>
+    <td>${s.hasUnsubscribe ? '<span style="color:#22c55e">Yes</span>' : '<span style="color:#525252">No</span>'}</td>
+    <td style="font-size:0.72rem;color:#737373;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc((s.subjects||[]).join(' | '))}">${esc((s.subjects||[]).join(" | "))}</td>
+    <td>
+      <div class="act-group">
+        ${s.hasUnsubscribe
+          ? actionBtn(queueMap, s.domain, "unsubscribe", "unsub", "Unsubscribe", i, true)
+          : actionBtn(queueMap, s.domain, "request_removal", "removal", "Request Removal", i, true)}
+        ${actionBtn(queueMap, s.domain, "block", "block", "Block", i, true)}
+        ${actionBtn(queueMap, s.domain, "archive", "archive", "Archive", i, showArchive)}
+        ${actionBtn(queueMap, s.domain, "track_request", "track", "Track Compliance", i, showTrack)}
+        ${showSafe ? `<button class="act-btn safe" data-idx="${i}">Mark Safe</button>` : ""}
+      </div>
+    </td>
+  </tr>`;
+  }).join("");
+
+  const section = document.getElementById("senders-section");
+  section.innerHTML = `
+    <h2 class="section-title">Senders (${filteredSenders.length})</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th><input type="checkbox" class="sender-cb" data-domain="__all__" ${allChecked && filteredSenders.length > 0 ? "checked" : ""}></th><th>Domain</th><th>From</th><th>Count</th><th>Category</th><th>Unsub</th><th>Subjects</th><th>Actions</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  section.addEventListener("click", handleActionClick);
+  section.addEventListener("change", handleCheckboxChange);
+  renderBulkBar();
+}
+
+function renderPrivacy(stats, requests) {
+  document.getElementById("privacy-stats").innerHTML = `
+    <div class="stat-card"><div class="label">Total</div><div class="value">${stats.total}</div></div>
+    <div class="stat-card"><div class="label">Pending</div><div class="value yellow">${stats.pending}</div>${stats.overdueCount > 0 ? `<span class="overdue-badge">${stats.overdueCount} overdue</span>` : ""}</div>
+    <div class="stat-card"><div class="label">Complied</div><div class="value green">${stats.complied}</div></div>
+    <div class="stat-card"><div class="label">Violations</div><div class="value red">${stats.violated}</div></div>
+  `;
+
+  if (requests.length === 0) {
+    document.getElementById("requests-section").innerHTML = `<div class="empty">No privacy requests tracked yet.</div>`;
+    return;
+  }
+  const rows = requests.map(r => {
+    const days = daysUntil(r.deadline);
+    const daysCell = r.status === "pending"
+      ? (days < 0 ? `<span style="color:#ef4444;font-weight:700">${Math.abs(days)}d overdue</span>` : days <= 3 ? `<span style="color:#eab308">${days}d</span>` : `${days}d`)
+      : "—";
+    return `<tr>
+      <td style="font-family:monospace;font-size:0.75rem">${r.senderEmail}</td>
+      <td>${r.senderDomain}</td>
+      <td style="text-transform:capitalize">${r.requestType.replace("_", " ")}</td>
+      <td>${r.method || "—"}</td>
+      <td>${fmtDate(r.requestedAt)}</td>
+      <td>${fmtDate(r.deadline)}</td>
+      <td>${daysCell}</td>
+      <td>${badgeHtml(r.status)}</td>
+    </tr>`;
+  }).join("");
+  document.getElementById("requests-section").innerHTML = `
+    <h2 class="section-title">Requests</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Sender</th><th>Domain</th><th>Type</th><th>Method</th><th>Requested</th><th>Deadline</th><th>Days Left</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function renderViolations(violations) {
+  if (violations.length === 0) {
+    document.getElementById("violations-section").innerHTML = `<div class="empty">No violations detected.</div>`;
+    return;
+  }
+  const rows = violations.map(v => `<tr>
+    <td style="font-family:monospace;font-size:0.75rem">${v.senderEmail}</td>
+    <td style="text-transform:uppercase">${v.violationType}</td>
+    <td>${fmtDate(v.deadlineDate)}</td>
+    <td>${fmtDate(v.violationDate)}</td>
+    <td>${v.messageIds.length}</td>
+    <td>${badgeHtml(v.status)}</td>
+  </tr>`).join("");
+  document.getElementById("violations-section").innerHTML = `
+    <h2 class="section-title">Violations</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Sender</th><th>Law</th><th>Deadline</th><th>Violation Date</th><th>Messages</th><th>Notice Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+let queueExpanded = false;
+
+function renderQueue(items) {
+  const el = document.getElementById("queue-section");
+  if (!items || items.length === 0) {
+    el.innerHTML = "";
+    return;
+  }
+
+  // Separate by status
+  const active = items.filter(q => q.status === "pending" || q.status === "running");
+  const done = items.filter(q => q.status === "done");
+  const errors = items.filter(q => q.status === "error");
+
+  // Summary counts
+  const parts = [];
+  if (active.length > 0) parts.push(`<span class="qs-stat yellow">${active.length} active</span>`);
+  if (done.length > 0) parts.push(`<span class="qs-stat green">${done.length} completed</span>`);
+  if (errors.length > 0) parts.push(`<span class="qs-stat red">${errors.length} failed</span>`);
+
+  // Always show active items; show completed only when expanded
+  const visibleItems = queueExpanded ? items : active;
+
+  const rows = visibleItems.map(q => {
+    const statusBadge = badgeHtml(q.status, q.status);
+    const detail = q.status === "done" ? (q.result || "") : q.status === "error" ? (q.error || "") : "";
+    return `<div class="queue-item">
+      ${statusBadge}
+      <span style="font-weight:600;text-transform:capitalize">${q.action.replace("_"," ")}</span>
+      <span style="color:#a3a3a3">${q.senderDomain}</span>
+      <span style="color:#525252;font-size:0.7rem;margin-left:auto">${fmtTime(q.createdAt)}</span>
+      ${detail ? `<span style="color:#737373;font-size:0.7rem;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${detail}">${detail}</span>` : ""}
+    </div>`;
+  }).join("");
+
+  const toggleLabel = queueExpanded ? "Hide completed" : `Show ${done.length + errors.length} completed`;
+  const hasCompleted = done.length + errors.length > 0;
+
+  el.innerHTML = `
+    <h2 class="section-title">Action Queue</h2>
+    <div class="queue-summary">
+      ${parts.join('<span style="color:#333">&middot;</span>')}
+      ${hasCompleted ? `<button class="queue-toggle" id="queue-toggle-btn">${toggleLabel}</button>` : ""}
+      ${hasCompleted ? `<button class="queue-clear" id="queue-clear-btn">Clear completed</button>` : ""}
+    </div>
+    ${visibleItems.length > 0 ? `<div style="background:#171717;border:1px solid #262626;border-top:none;border-radius:0 0 8px 8px;padding:0.75rem;max-height:300px;overflow-y:auto">
+      ${rows}
+    </div>` : ""}`;
+
+  if (hasCompleted) {
+    document.getElementById("queue-toggle-btn").addEventListener("click", () => {
+      queueExpanded = !queueExpanded;
+      renderQueue(queueData);
+    });
+    document.getElementById("queue-clear-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("queue-clear-btn");
+      btn.textContent = "Clearing...";
+      btn.disabled = true;
+      const toDelete = [...done, ...errors];
+      for (const q of toDelete) {
+        try { await convexMut("actionQueue:remove", { id: q._id }); } catch (e) { console.error(e); }
+      }
+      refresh();
+    });
+  }
+}
+
+async function refresh() {
+  try {
+    const [scan, stats, requests, violations, queue] = await Promise.all([
+      convexQuery("inboxScans:latest"),
+      convexQuery("privacyRequests:stats"),
+      convexQuery("privacyRequests:list"),
+      convexQuery("privacyViolations:list"),
+      convexQuery("actionQueue:list", { limit: 100 }),
+    ]);
+
+    scanData = scan;
+    queueData = queue || [];
+
+    // Complexity Map tab
+    if (scan) {
+      renderScanStats(scan);
+      renderSenderTable(scan);
+    } else {
+      document.getElementById("scan-stats").innerHTML = "";
+      document.getElementById("cat-chart").innerHTML = "";
+      document.getElementById("senders-section").innerHTML = `<div class="empty">No inbox scan yet. Run <code>/dynoclux scan</code> in Telegram to generate one.</div>`;
+    }
+
+    // Action queue
+    renderQueue(queue);
+
+    // Privacy tab
+    renderPrivacy(stats, requests);
+
+    // Violations tab
+    renderViolations(violations);
+
+    // Alerts
+    const alertsEl = document.getElementById("alerts");
+    let alertsHtml = "";
+    if (scan && (Date.now() - scan.scannedAt) > 24 * 60 * 60 * 1000) {
+      const hoursOld = Math.round((Date.now() - scan.scannedAt) / (60 * 60 * 1000));
+      alertsHtml += `<div class="stale-banner">Scan data is ${hoursOld}h old. Re-scan via Telegram: <code>/dynoclux scan</code></div>`;
+    }
+    if (stats.overdueCount > 0) {
+      alertsHtml += `<div class="alert-bar">${stats.overdueCount} request(s) are past their compliance deadline.</div>`;
+    }
+    alertsEl.innerHTML = alertsHtml;
+
+    document.getElementById("updated").textContent = new Date().toLocaleTimeString();
+  } catch (err) {
+    console.error("Refresh failed:", err);
+    document.getElementById("alerts").innerHTML = `<div class="alert-bar">Failed to load data: ${err.message}</div>`;
+  }
+}
+
+refresh();
+setInterval(refresh, 60000);
+</script>
+</body>
+</html>

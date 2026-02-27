@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as actionQueue from "../actionQueue.js";
 import type * as admin from "../admin.js";
 import type * as apiKeyRegistry from "../apiKeyRegistry.js";
 import type * as cmsPages from "../cmsPages.js";
@@ -17,6 +18,7 @@ import type * as crons from "../crons.js";
 import type * as deployJobs from "../deployJobs.js";
 import type * as deployments from "../deployments.js";
 import type * as http from "../http.js";
+import type * as inboxScans from "../inboxScans.js";
 import type * as knowledge from "../knowledge.js";
 import type * as knowledgeActions from "../knowledgeActions.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -26,6 +28,8 @@ import type * as mediaActions from "../mediaActions.js";
 import type * as navLinks from "../navLinks.js";
 import type * as pluginConfigs from "../pluginConfigs.js";
 import type * as pricingPlans from "../pricingPlans.js";
+import type * as privacyRequests from "../privacyRequests.js";
+import type * as privacyViolations from "../privacyViolations.js";
 import type * as skillConfigs from "../skillConfigs.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
@@ -37,6 +41,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  actionQueue: typeof actionQueue;
   admin: typeof admin;
   apiKeyRegistry: typeof apiKeyRegistry;
   cmsPages: typeof cmsPages;
@@ -46,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   deployJobs: typeof deployJobs;
   deployments: typeof deployments;
   http: typeof http;
+  inboxScans: typeof inboxScans;
   knowledge: typeof knowledge;
   knowledgeActions: typeof knowledgeActions;
   "lib/auth": typeof lib_auth;
@@ -55,6 +61,8 @@ declare const fullApi: ApiFromModules<{
   navLinks: typeof navLinks;
   pluginConfigs: typeof pluginConfigs;
   pricingPlans: typeof pricingPlans;
+  privacyRequests: typeof privacyRequests;
+  privacyViolations: typeof privacyViolations;
   skillConfigs: typeof skillConfigs;
   subscriptions: typeof subscriptions;
   users: typeof users;

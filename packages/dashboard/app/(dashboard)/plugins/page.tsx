@@ -46,14 +46,11 @@ export default function PluginsPage() {
     if (!deployment) return;
     setSyncing(true);
     try {
-      await fetch("/api/gcp/vm", {
+      await fetch("/api/gcp/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          project: deployment.gcpProjectId,
-          zone: deployment.gcpZone,
-          vm: deployment.vmName,
-          action: "reset",
+          deploymentId: deployment._id,
         }),
       });
       setHasChanges(false);
