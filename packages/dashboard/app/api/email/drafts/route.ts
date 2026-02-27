@@ -50,7 +50,14 @@ interface GmailDraft {
 }
 
 export async function GET() {
-  const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!convexUrl) {
+    return NextResponse.json(
+      { error: "Server misconfigured: missing Convex URL" },
+      { status: 500 }
+    );
+  }
+  const convex = new ConvexHttpClient(convexUrl);
   const authResult = await getGcpToken();
   if (!authResult) {
     return NextResponse.json(
@@ -110,7 +117,7 @@ export async function GET() {
     const drafts: GmailDraft[] = await Promise.all(
       listData.drafts.map(async (d: { id: string }) => {
         const res = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/drafts/${d.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=To&metadataHeaders=Date`,
+          `https://gmail.googleapis.com/gmail/v1/users/me/drafts/${d.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=To&metadataHeaders=Date&fields=message/payload/headers`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
         if (!res.ok) return { id: d.id, subject: "(unknown)", to: "", date: "" };

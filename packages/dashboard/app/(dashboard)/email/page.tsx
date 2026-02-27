@@ -39,6 +39,11 @@ export default function EmailPage() {
     setError(null);
     try {
       const res = await fetch("/api/email/drafts");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        setError(data.error || `HTTP ${res.status}`);
+        return;
+      }
       const data = await res.json();
       if (data.error) {
         setError(data.error);

@@ -122,15 +122,15 @@ export default function PrivacyPage() {
           )}
         </TabsContent>
 
-        {tab !== "actions" && (
-          <TabsContent value={tab}>
+        {(["all", "pending", "violated", "complied"] as const).map((t) => (
+          <TabsContent key={t} value={t}>
             {requests === undefined ? (
               <Skeleton className="h-[200px]" />
             ) : (
               <PrivacyRequestsTable requests={requests} />
             )}
           </TabsContent>
-        )}
+        ))}
       </Tabs>
 
       {violations && violations.length > 0 && (
