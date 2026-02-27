@@ -1,6 +1,6 @@
 ---
 name: dynosist
-description: Compose Gmail drafts with file attachments — find uploaded files, build the email, and save as draft
+description: Compose Gmail drafts with file attachments, search emails, find uploaded files, and manage drafts
 user-invocable: true
 metadata: {"openclaw":{"emoji":"📧"}}
 ---
@@ -19,6 +19,7 @@ Compose Gmail drafts with optional file attachments. Locate files uploaded via T
 > 2. **Email a file** — Find a recently uploaded file and draft an email with it attached
 > 3. **List drafts** — Show recent Gmail drafts
 > 4. **Find files** — Search for files on the system (e.g. recent Telegram uploads)
+> 5. **Search emails** — Find emails by sender, subject, date, or keywords
 >
 > You can also give a direct instruction, e.g. "email the PDF I just sent to john@example.com with subject Monthly Report"
 
@@ -74,6 +75,31 @@ Call `dynosist_find_files` with the user's search pattern. Present results:
 |----------|------|----------|------|
 
 Suggest: *"Want me to draft an email with any of these files attached?"*
+
+## Mode 5: Search Emails
+
+Call `dynosist_search_emails` with the user's query. Gmail search supports these operators:
+
+- `from:john@example.com` — emails from a specific sender
+- `to:jane@example.com` — emails to a specific recipient
+- `subject:invoice` — emails with a word in the subject
+- `after:2026/02/01` / `before:2026/02/28` — date range
+- `has:attachment` — only emails with attachments
+- `is:unread` — only unread emails
+- `label:important` — emails with a specific label
+- `in:inbox` / `in:sent` — search specific mailboxes
+
+Operators can be combined: `from:john@example.com subject:invoice after:2026/02/01`
+
+Present results as a numbered list:
+
+> **📧 Search results for** `from:john@example.com`
+>
+> 1. **Subject:** Monthly Report — **From:** John Smith <john@example.com> — **Date:** Feb 15, 2026
+>    _Preview: Here's the monthly report for January..._
+> 2. ...
+
+After showing results, suggest follow-ups: *"Want me to draft a reply to any of these?"*
 
 ## Guidelines
 
