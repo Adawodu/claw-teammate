@@ -1,4 +1,5 @@
 import type { DeployConfig } from "../config/types.js";
+import { OPENCLAW_VERSION } from "@dynoclaw/shared";
 
 export function generateStartupScript(config: DeployConfig): string {
   const secretFetches = Object.keys(config.apiKeys)
@@ -44,10 +45,18 @@ if [ ! -f "\${MARKER}" ]; then
   apt-get install -y nodejs
 
   echo "==> Installing OpenClaw..."
-  npm install -g openclaw@2026.2.17
+  npm install -g openclaw@${OPENCLAW_VERSION}
 
   mkdir -p "\${OPENCLAW_DIR}"
   touch "\${MARKER}"
+fi
+
+# ── Upgrade OpenClaw if version differs ────────────────────────────
+DESIRED_VERSION="${OPENCLAW_VERSION}"
+CURRENT_VERSION="$(openclaw --version 2>/dev/null || echo 'none')"
+if [ "\${CURRENT_VERSION}" != "\${DESIRED_VERSION}" ]; then
+  echo "==> Upgrading OpenClaw \${CURRENT_VERSION} → \${DESIRED_VERSION}..."
+  npm install -g "openclaw@\${DESIRED_VERSION}"
 fi
 
 # ── Fetch secrets ─────────────────────────────────────────────────

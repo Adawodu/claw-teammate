@@ -1,4 +1,4 @@
-import { PLUGIN_REGISTRY, SKILL_REGISTRY } from "@dynoclaw/shared";
+import { PLUGIN_REGISTRY, SKILL_REGISTRY, OPENCLAW_VERSION } from "@dynoclaw/shared";
 
 // Known secrets that may exist in Secret Manager.
 // The startup script always tries to fetch all of them, so re-deploys and
@@ -84,7 +84,7 @@ curl -sfL "${repoBase}/plugins/${p}/openclaw.plugin.json" -o "\${DEST}/openclaw.
   // Build the complete openclaw.json as a JSON string with bash ${VAR} placeholders.
   // The heredoc (without quotes) will expand these at runtime.
   const fullConfig = {
-    meta: { lastTouchedVersion: "2026.2.17" },
+    meta: { lastTouchedVersion: OPENCLAW_VERSION },
     agents: {
       defaults: {
         model: {
@@ -167,10 +167,18 @@ if [ ! -f "\${MARKER}" ]; then
   apt-get install -y nodejs
 
   echo "==> Installing OpenClaw..."
-  npm install -g openclaw@2026.2.17
+  npm install -g openclaw@${OPENCLAW_VERSION}
 
   mkdir -p "\${OPENCLAW_DIR}"
   touch "\${MARKER}"
+fi
+
+# ── Upgrade OpenClaw if version differs ────────────────────────────
+DESIRED_VERSION="${OPENCLAW_VERSION}"
+CURRENT_VERSION="$(openclaw --version 2>/dev/null || echo 'none')"
+if [ "\${CURRENT_VERSION}" != "\${DESIRED_VERSION}" ]; then
+  echo "==> Upgrading OpenClaw \${CURRENT_VERSION} → \${DESIRED_VERSION}..."
+  npm install -g "openclaw@\${DESIRED_VERSION}"
 fi
 
 # ── Fetch secrets ─────────────────────────────────────────────────

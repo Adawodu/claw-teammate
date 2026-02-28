@@ -85,11 +85,11 @@
 **Consequences**: Zero-code skill creation — just write Markdown. Skills can reference any registered tool. Trade-off: less deterministic than coded workflows. Skill quality depends on prompt engineering.
 
 ### DD-013: Pin OpenClaw Version
-**Date**: 2026-02-22
-**Status**: Accepted
-**Context**: OpenClaw `2026.2.22-2` introduced a Telegram regression — polling never starts after gateway boot.
-**Decision**: Pin to `2026.2.17` (last known-working version). Startup scripts should use `openclaw@2026.2.17` instead of `openclaw@latest`.
-**Consequences**: Stability over new features. Must manually test and update the pinned version when upgrading. Newer config keys (`commands.ownerDisplay`, `channels.telegram.streaming`) must be removed when downgrading.
+**Date**: 2026-02-22 (updated 2026-02-27)
+**Status**: Updated
+**Context**: OpenClaw `2026.2.22-2` introduced a Telegram regression — polling never starts after gateway boot. Pinned to `2026.2.17`. Tested `2026.2.26` on 2026-02-27: Telegram polling works, WhatsApp listener active, delivery queue recovery functional. The `2026.2.26` release includes Telegram/DM allowlist runtime inheritance fixes that resolved the regression.
+**Decision**: Pin to `2026.2.26`. Startup scripts use `openclaw@2026.2.26`. Continue pinning rather than using `@latest` to avoid future regressions.
+**Consequences**: Unlocks new channel support (WhatsApp, Discord, Google Chat, Signal, etc.) for future integrations. Must still manually test before bumping the pinned version.
 
 ### DD-014: Lazy Stripe Client Initialization
 **Date**: 2026-02-20

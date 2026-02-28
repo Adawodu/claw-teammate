@@ -104,10 +104,18 @@ if [ ! -f "${MARKER}" ]; then
   apt-get install -y nodejs
 
   echo "==> Installing OpenClaw..."
-  npm install -g openclaw@2026.2.17
+  npm install -g openclaw@2026.2.26
 
   mkdir -p "${OPENCLAW_DIR}"
   touch "${MARKER}"
+fi
+
+# ── Upgrade OpenClaw if version differs ────────────────────────────
+DESIRED_VERSION="2026.2.26"
+CURRENT_VERSION="$(openclaw --version 2>/dev/null || echo 'none')"
+if [ "${CURRENT_VERSION}" != "${DESIRED_VERSION}" ]; then
+  echo "==> Upgrading OpenClaw ${CURRENT_VERSION} → ${DESIRED_VERSION}..."
+  npm install -g "openclaw@${DESIRED_VERSION}"
 fi
 
 # ── Fetch secrets ─────────────────────────────────────────────────
