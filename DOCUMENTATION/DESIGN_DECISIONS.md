@@ -98,7 +98,14 @@
 **Decision**: Stripe client initialized via lazy `getStripe()` singleton. `ConvexHttpClient` created inside route handlers, not at module scope.
 **Consequences**: Avoids build-time errors and cold-start failures. Slightly more verbose code but reliable across all Next.js runtime contexts.
 
-### DD-015: Google Drive via OAuth2 (Not Service Account)
+### DD-015: Auto-Upgrade OpenClaw on Existing VMs
+**Date**: 2026-02-27
+**Status**: Accepted
+**Context**: When the pinned OpenClaw version is bumped, only newly provisioned VMs get it. Existing VMs skip the install block because the `/opt/openclaw/.installed` marker file already exists. Users had to manually SSH in to upgrade.
+**Decision**: Add a version comparison block to all startup scripts that runs after the first-boot guard. On every boot, the script compares the installed version (`openclaw --version`) against the pinned `OPENCLAW_VERSION` constant and runs `npm install -g` if they differ. A dashboard "Upgrade VM" button triggers this by calling the existing `/api/gcp/update` route (regenerates startup script + hard resets VM). No SSH or new API routes needed.
+**Consequences**: Version bumps propagate to existing VMs on next reboot or dashboard-triggered upgrade. Single source of truth for the version lives in `packages/shared/src/index.ts`. The `deploy-openclaw.sh` shell script hardcodes the version since it can't import from TypeScript.
+
+### DD-016: Google Drive via OAuth2 (Not Service Account)
 **Date**: 2026-02-21
 **Status**: Accepted
 **Context**: Needed to store generated media (images/videos) in Google Drive. Service account approach initially used but discovered SA keys have 0 storage quota on personal Gmail.
