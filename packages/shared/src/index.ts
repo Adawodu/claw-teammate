@@ -1,3 +1,5 @@
+export const OPENCLAW_VERSION = "2026.2.26";
+
 export type {
   DeployConfig,
   GcpConfig,

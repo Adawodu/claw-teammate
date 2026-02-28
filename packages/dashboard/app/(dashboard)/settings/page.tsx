@@ -28,7 +28,9 @@ import {
   Plus,
   X,
   Info,
+  ArrowUpCircle,
 } from "lucide-react";
+import { OPENCLAW_VERSION } from "@dynoclaw/shared";
 
 function RestartRequiredBanner() {
   return (
@@ -61,6 +63,13 @@ export default function SettingsPage() {
     "stop" | "reset" | "delete" | null
   >(null);
   const [polling, setPolling] = useState(false);
+
+  // Upgrade state
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeResult, setUpgradeResult] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   // Branding edit state
   const [editingBranding, setEditingBranding] = useState(false);
@@ -149,6 +158,40 @@ export default function SettingsPage() {
     },
     [deployment, refreshStatus]
   );
+
+  const upgradeVm = useCallback(async () => {
+    if (!deployment) return;
+    setUpgrading(true);
+    setUpgradeResult(null);
+    try {
+      const res = await fetch("/api/gcp/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deploymentId: deployment._id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUpgradeResult({
+          type: "success",
+          message: "Upgrade initiated. VM is restarting with the new version.",
+        });
+        setTimeout(refreshStatus, 15000);
+        setTimeout(refreshStatus, 60000);
+      } else {
+        setUpgradeResult({
+          type: "error",
+          message: data.error || "Upgrade failed",
+        });
+      }
+    } catch (err) {
+      setUpgradeResult({
+        type: "error",
+        message: err instanceof Error ? err.message : "Network error",
+      });
+    } finally {
+      setUpgrading(false);
+    }
+  }, [deployment, refreshStatus]);
 
   const startEditBranding = useCallback(() => {
     if (!deployment) return;
@@ -295,6 +338,39 @@ export default function SettingsPage() {
                 )}
               </span>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">OpenClaw Version</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Target Version</span>
+            <span className="font-mono">{OPENCLAW_VERSION}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Upgrades OpenClaw and restarts your VM. Takes ~2 minutes.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={upgrading || deployment.status === "stopped"}
+              onClick={upgradeVm}
+            >
+              <ArrowUpCircle className="mr-1 h-3 w-3" />
+              {upgrading ? "Upgrading..." : "Upgrade VM"}
+            </Button>
+          </div>
+          {upgradeResult && (
+            <p
+              className={`text-sm ${upgradeResult.type === "error" ? "text-destructive" : "text-green-500"}`}
+            >
+              {upgradeResult.message}
+            </p>
           )}
         </CardContent>
       </Card>

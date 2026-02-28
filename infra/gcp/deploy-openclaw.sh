@@ -110,6 +110,14 @@ if [ ! -f "${MARKER}" ]; then
   touch "${MARKER}"
 fi
 
+# ── Upgrade OpenClaw if version differs ────────────────────────────
+DESIRED_VERSION="2026.2.26"
+CURRENT_VERSION="$(openclaw --version 2>/dev/null || echo 'none')"
+if [ "${CURRENT_VERSION}" != "${DESIRED_VERSION}" ]; then
+  echo "==> Upgrading OpenClaw ${CURRENT_VERSION} → ${DESIRED_VERSION}..."
+  npm install -g "openclaw@${DESIRED_VERSION}"
+fi
+
 # ── Fetch secrets ─────────────────────────────────────────────────
 PROJECT_ID="$(curl -s -H 'Metadata-Flavor: Google' http://metadata.google.internal/computeMetadata/v1/project/project-id)"
 
