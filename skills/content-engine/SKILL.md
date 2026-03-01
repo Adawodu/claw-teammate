@@ -11,14 +11,23 @@ Generate a 7-day content calendar (Mon–Sun) with platform assignments for Link
 
 ## Steps
 
-1. **Research trends** — Run these 5 `web_search` queries:
+1. **Research trends** — Run these 8 `web_search` queries:
    - `"healthcare technology trends this week"` — health IT, digital health, EHR innovations
    - `"AI startups funding news this week"` — AI companies, raises, product launches
    - `"Africa tech business news this week"` — African startups, markets, infrastructure
    - `"fintech payments news this week"` — fintech deals, crypto regulation, payments
    - `"software engineering leadership trends"` — engineering management, developer experience, career growth
+   - `"educational travel crowdfunding trends"` — study abroad funding, learning experience gifts (ShemShems)
+   - `"year in review apps social media wrap"` — annual recaps, wrapped-style products, personal analytics (myir.io)
+   - `"faith tech devotional apps trends"` — digital devotionals, church tech, spiritual wellness apps (withLoam)
 
 2. **Pull engagement insights** — Call `knowledge_search` with query `"engagement insights top performing content"` and tags `["engagement-insights"]`. Note which topics and formats performed best.
+
+2b. **Pull growth and product signals** — Run these additional `knowledge_search` calls:
+   - Query: `"GROWTH METRICS"` — pull recent growth data to identify products with momentum
+   - Query: `"PRODUCT UPDATE"` — pull recent product milestones for timely content angles
+
+   Prioritize products with recent momentum (positive growth metrics or fresh launches) when assigning calendar slots. If a product just hit a milestone, schedule content around it within 2-3 days.
 
 3. **Pull last week's calendar** (if exists) — Call `knowledge_search` with query `"content calendar"` and tags `["content-calendar"]`. Avoid repeating the same topics.
 
@@ -34,6 +43,7 @@ Generate a 7-day content calendar (Mon–Sun) with platform assignments for Link
    - X: 4-5 posts/week (daily is fine, threads on Mon/Thu)
    - At least 1 day has both platforms
    - Weekend (Sat/Sun): lighter content or skip
+   - **Product rotation**: Mention at most 1-2 products per day. Rotate through the portfolio across the week — don't feature the same product two days in a row. Products: ParallelScore, ShemShems, myir.io, withLoam, DynoClaw, personal brand.
 
 5. **Store to knowledge base** — Call `knowledge_store` with:
    - `title`: `"Content Calendar — Week of [Monday date]"`

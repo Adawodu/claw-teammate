@@ -14,7 +14,9 @@ Draft a weekly newsletter that synthesizes the week's content, engagement insigh
 1. **Gather source material** — Run these `knowledge_search` calls:
    - Query: `"content calendar"`, tags: `["content-calendar"]` — this week's planned content
    - Query: `"engagement insights"`, tags: `["engagement-insights"]` — what performed well
-   - Query: `"daily briefing"`, tags: `["briefing"]` — recent briefing summaries (if stored)
+   - Query: `"DAILY BRIEFING"` — pull the week's condensed briefing summaries for newsletter themes
+   - Query: `"GROWTH EXPERIMENT RESULT"` — pull recent growth experiment outcomes for "What I'm building" section
+   - Query: `"COMPETITOR INTEL"` — pull recent competitor findings for market context and quick hits
 
 2. **Check Postiz analytics** (if available):
    - Call `postiz_channels` to get integration IDs
@@ -63,6 +65,6 @@ When creating the Beehiiv draft, convert the newsletter to clean HTML:
 - The newsletter should feel like a letter from a smart friend, not a corporate update.
 - The main read should have a clear narrative arc — don't just list facts.
 - Quick hits should add value beyond what was already posted on social media.
-- "What I'm building" should be genuine and specific, not vague.
+- "What I'm building" should be genuine and specific — reference actual `PRODUCT UPDATE` entries from the knowledge DB when available.
 - Total length: 600-900 words (readable in 3-4 minutes).
 - Write in first person, conversational tone.

@@ -53,6 +53,12 @@ Use this exact structure:
 **Worth Watching:** [Optional cross-topic highlight]
 ```
 
+5. **Store condensed briefing** — After presenting the output, call `knowledge_store` with:
+   - `text`: `"DAILY BRIEFING [today's date]: [150-word condensed extract covering the top story from each section and any cross-topic highlights]"`
+   - `tags`: `["briefing", "market-signal"]`
+
+   The condensed extract should capture the single most significant story per section (Tech, Healthcare, Africa, Fintech) in 1-2 sentences each, plus any Worth Watching item.
+
 ## Guidelines
 
 - Keep the total briefing to ~400-500 words — scannable, not exhaustive.

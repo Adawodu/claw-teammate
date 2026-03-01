@@ -66,6 +66,24 @@ export const SKILL_REGISTRY: SkillMeta[] = [
     cronDescription: "On-demand only",
     requiredPlugins: ["dynosist"],
   },
+  {
+    id: "growth-hacker",
+    name: "Growth Hacker",
+    description:
+      "Multi-product growth strategy, experiments, and competitive analysis",
+    cron: null,
+    cronDescription: "On-demand only",
+    requiredPlugins: ["postiz", "convex-knowledge"],
+  },
+  {
+    id: "product-update",
+    name: "Product Update",
+    description:
+      "Log product milestones and updates to the shared knowledge DB",
+    cron: null,
+    cronDescription: "On-demand only",
+    requiredPlugins: ["convex-knowledge"],
+  },
 ];
 
 export function getSkillById(id: string): SkillMeta | undefined {
