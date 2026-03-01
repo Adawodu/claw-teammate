@@ -23,6 +23,12 @@ If invoked as `/daily-posts [topic]`, skip the calendar lookup and use the provi
 
 ## Steps
 
+2b. **Enrich with product and market context** — If today's calendar entry references a specific product, run these `knowledge_search` calls:
+   - Query: `"PRODUCT UPDATE [product name]"` — pull recent milestones and launches for that product
+   - Query: `"COMPETITOR INTEL [product name]"` — pull recent competitive findings
+
+   Incorporate real details (metrics, launch dates, competitive angles) into drafts instead of generic statements.
+
 3. **Draft the content** based on today's platform assignment:
 
    **For LinkedIn:**

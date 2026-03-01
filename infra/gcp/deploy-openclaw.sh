@@ -408,7 +408,9 @@ install_skills() {
     daily-posts/SKILL.md \
     newsletter-writer/SKILL.md \
     engagement-monitor/SKILL.md \
-    dynoclux/SKILL.md
+    dynoclux/SKILL.md \
+    growth-hacker/SKILL.md \
+    product-update/SKILL.md
 
   echo "==> Copying skills tarball to VM..."
   gcloud compute scp "${TARBALL}" \
