@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jonny Mate — Operations Guide</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-code: #141620;
+    --border: #2a2d3a;
+    --text: #e0e0e6;
+    --text-muted: #8b8fa3;
+    --accent: #6c8cff;
+    --accent-dim: #4a5a99;
+    --green: #4ade80;
+    --orange: #fb923c;
+    --red: #f87171;
+    --yellow: #facc15;
+    --sidebar-w: 260px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px 0;
+    z-index: 100;
+  }
+  .sidebar-title {
+    padding: 0 20px 16px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .sidebar a {
+    display: block;
+    padding: 6px 20px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .sidebar a:hover { color: var(--accent); background: rgba(108,140,255,0.08); }
+  .sidebar a.s2 { padding-left: 36px; font-size: 12px; }
+
+  /* Main */
+  .main {
+    margin-left: var(--sidebar-w);
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* Hamburger */
+  .hamburger {
+    display: none;
+    position: fixed;
+    top: 12px; left: 12px;
+    z-index: 200;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 20px;
+  }
+
+  /* Typography */
+  h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+  h1 span { color: var(--accent); }
+  .subtitle { color: var(--text-muted); font-size: 16px; margin-bottom: 40px; }
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  h3 { font-size: 17px; font-weight: 600; margin: 28px 0 10px; color: var(--accent); }
+  h4 { font-size: 15px; font-weight: 600; margin: 20px 0 8px; }
+  p { margin-bottom: 12px; }
+  ul, ol { margin: 0 0 16px 20px; }
+  li { margin-bottom: 4px; }
+  strong { color: #fff; }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--bg-card);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td { color: var(--text); }
+  tr:hover td { background: rgba(108,140,255,0.04); }
+
+  /* Code */
+  code {
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    color: var(--green);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 12px 0 16px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-auto { background: rgba(74,222,128,0.15); color: var(--green); }
+  .badge-manual { background: rgba(108,140,255,0.15); color: var(--accent); }
+  .badge-cron { background: rgba(250,204,21,0.15); color: var(--yellow); }
+
+  /* Diagram */
+  .diagram {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--text-muted);
+  }
+
+  /* Skill card */
+  .skill {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 12px 0;
+  }
+  .skill-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .skill-emoji { font-size: 20px; }
+  .skill-name {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--accent);
+    font-family: 'SF Mono', monospace;
+  }
+  .skill-desc { color: var(--text-muted); font-size: 14px; margin-bottom: 10px; }
+  .skill-detail { font-size: 14px; }
+  .skill-detail dt { font-weight: 600; color: #fff; margin-top: 8px; }
+  .skill-detail dd { color: var(--text-muted); margin-left: 0; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); transition: transform 0.25s; }
+    .sidebar.open { transform: translateX(0); }
+    .hamburger { display: block; }
+    .main { margin-left: 0; padding: 60px 20px 80px; }
+  }
+
+  /* Print */
+  @media print {
+    .sidebar, .hamburger { display: none !important; }
+    .main { margin-left: 0; max-width: 100%; padding: 20px; }
+    body { background: #fff; color: #111; font-size: 12px; }
+    .card, .skill { border-color: #ccc; background: #f9f9f9; }
+    pre, code { background: #f0f0f0; color: #111; }
+    h2 { border-color: #ccc; }
+    a { color: #111; }
+  }
+</style>
+</head>
+<body>
+
+<button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+
+<nav class="sidebar">
+  <div class="sidebar-title">Jonny Mate Guide</div>
+  <a href="#overview">System Overview</a>
+  <a href="#architecture" class="s2">Architecture</a>
+  <a href="#infrastructure" class="s2">Infrastructure</a>
+  <a href="#products">Product Portfolio</a>
+  <a href="#workflows">Daily &amp; Weekly Workflows</a>
+  <a href="#cron-schedule" class="s2">Cron Schedule</a>
+  <a href="#content-lifecycle" class="s2">Content Lifecycle</a>
+  <a href="#skills">Skills Reference</a>
+  <a href="#skill-daily-briefing" class="s2">/daily-briefing</a>
+  <a href="#skill-content-engine" class="s2">/content-engine</a>
+  <a href="#skill-daily-posts" class="s2">/daily-posts</a>
+  <a href="#skill-newsletter-writer" class="s2">/newsletter-writer</a>
+  <a href="#skill-engagement-monitor" class="s2">/engagement-monitor</a>
+  <a href="#skill-product-update" class="s2">/product-update</a>
+  <a href="#skill-growth-hacker" class="s2">/growth-hacker</a>
+  <a href="#skill-job-hunter" class="s2">/job-hunter</a>
+  <a href="#skill-dynoclux" class="s2">/dynoclux</a>
+  <a href="#skill-dynosist" class="s2">/dynosist</a>
+  <a href="#knowledge-db">Knowledge DB</a>
+  <a href="#brand-voice">Brand Voice</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+  <a href="#deployment">Deployment &amp; Maintenance</a>
+</nav>
+
+<div class="main">
+
+  <h1><span>Jonny Mate</span> &mdash; Operations Guide</h1>
+  <p class="subtitle">SOP for managing Bayo's AI agent system. Everything your team needs to operate, maintain, and extend the setup.</p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="overview">1. System Overview</h2>
+
+  <h3 id="architecture">Architecture</h3>
+  <p>Two AI agents run on a single GCP VM, sharing a Convex knowledge database. They operate independently but exchange data through the knowledge DB using text prefix conventions.</p>
+
+  <div class="diagram">
+┌─────────────────────────────┐       ┌──────────────┐       ┌─────────────────────────────┐
+│  JONNY MATE (main agent)    │       │  CONVEX      │       │  GROWTHCLAW (growth agent)  │
+│  @Jonnymate_bot             │       │  KNOWLEDGE   │       │  @JonnymateGrowthBot        │
+│                             │       │  DB          │       │                             │
+│  Skills:                    │       │              │       │  Skills:                    │
+│  - /daily-briefing     ────────store──►            │       │  - /content-engine          │
+│  - /content-engine     ────────store──►  BRIEFING  ◄──read─── /growth-hacker            │
+│  - /daily-posts        ◄──read────────  CALENDAR   ────store── /daily-posts              │
+│  - /newsletter-writer  ◄──read────────  PRODUCT    ────store── /newsletter-writer        │
+│  - /engagement-monitor ────────store──►  COMPETITOR ◄──read─── /engagement-monitor       │
+│  - /product-update     ────────store──►  GROWTH     ────store── /growth-hacker            │
+│  - /job-hunter              │       │  EXPERIMENT  │       │                             │
+│  - /dynoclux                │       │  ENGAGEMENT  │       │                             │
+│  - /dynosist                │       │  METRICS     │       │                             │
+└─────────────────────────────┘       └──────────────┘       └─────────────────────────────┘
+         │                                                              │
+         └──────────────── OpenClaw Gateway (systemd) ──────────────────┘
+                          GCP VM: openclaw-vm (e2-medium)
+                          Zone: us-central1-a
+</div>
+
+  <h3 id="infrastructure">Infrastructure</h3>
+  <div class="card">
+    <table>
+      <tr><th>Component</th><th>Details</th></tr>
+      <tr><td><strong>VM</strong></td><td><code>openclaw-vm</code> &mdash; GCP Compute Engine, e2-medium, Debian 12, us-central1-a</td></tr>
+      <tr><td><strong>Gateway</strong></td><td>OpenClaw gateway running as systemd service on port 18789 (loopback only)</td></tr>
+      <tr><td><strong>Access</strong></td><td>SSH via IAP only (no public IP). <code>gcloud compute ssh openclaw-vm --zone=us-central1-a</code></td></tr>
+      <tr><td><strong>Knowledge DB</strong></td><td>Convex (fortunate-seahorse-362.convex.cloud) &mdash; vector search for cross-agent data</td></tr>
+      <tr><td><strong>Social</strong></td><td>Postiz &mdash; LinkedIn + X post scheduling and analytics</td></tr>
+      <tr><td><strong>Newsletter</strong></td><td>Beehiiv &mdash; newsletter draft creation</td></tr>
+      <tr><td><strong>Email</strong></td><td>Gmail OAuth &mdash; draft creation, inbox scanning, search</td></tr>
+      <tr><td><strong>Code</strong></td><td>GitHub plugin &mdash; repo management, PRs, issues</td></tr>
+      <tr><td><strong>Media</strong></td><td>image-gen + video-gen plugins (Gemini + OpenAI backends, Google Drive storage)</td></tr>
+      <tr><td><strong>Secrets</strong></td><td>GCP Secret Manager &mdash; all API keys and tokens</td></tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="products">2. Product Portfolio</h2>
+  <p>Six products rotate through content. Max 2 products per post, never the same product two days in a row.</p>
+
+  <table>
+    <tr><th>Product</th><th>Description</th><th>Audience</th><th>Peak Seasons</th></tr>
+    <tr>
+      <td><strong>ParallelScore</strong></td>
+      <td>Healthcare IT staffing and consulting platform</td>
+      <td>Health IT pros, healthcare orgs, CIOs</td>
+      <td>Q4 planning, Q1 hiring, HIMSS (spring)</td>
+    </tr>
+    <tr>
+      <td><strong>ShemShems</strong></td>
+      <td>Educational travel crowdfunding platform</td>
+      <td>Students, parents, educators, gift-givers</td>
+      <td>Aug-Sep (back-to-school), May-Jun (graduation), Nov-Dec (holidays)</td>
+    </tr>
+    <tr>
+      <td><strong>myir.io</strong></td>
+      <td>Year-in-review / personal analytics app</td>
+      <td>Millennials/Gen Z, data enthusiasts</td>
+      <td>Nov-Jan (year-end wrap), Jun-Jul (mid-year check-in)</td>
+    </tr>
+    <tr>
+      <td><strong>withLoam</strong></td>
+      <td>Faith-based devotional and spiritual wellness app</td>
+      <td>Faith communities, church leaders</td>
+      <td>Lent (Feb-Apr), Easter, Advent (Nov-Dec), Jan (resolutions)</td>
+    </tr>
+    <tr>
+      <td><strong>DynoClaw</strong></td>
+      <td>AI agent platform with plugins, skills, multi-channel support</td>
+      <td>Developers, indie hackers, solopreneurs</td>
+      <td>Product Hunt launches, dev conference seasons</td>
+    </tr>
+    <tr>
+      <td><strong>Personal Brand</strong></td>
+      <td>Builder, health IT leader, multi-product founder</td>
+      <td>Tech pros, health IT leaders, African diaspora builders</td>
+      <td>Conference seasons, product launches</td>
+    </tr>
+  </table>
+
+  <h3>Cross-Promotion Pairings</h3>
+  <table>
+    <tr><th>Pairing</th><th>Natural Connection</th></tr>
+    <tr><td>Personal Brand + DynoClaw</td><td>Building in public, showing the tool behind the content</td></tr>
+    <tr><td>ShemShems + withLoam</td><td>Family/values-driven audiences, gift-giving overlap</td></tr>
+    <tr><td>ParallelScore + Personal Brand</td><td>Health IT thought leadership drives credibility</td></tr>
+    <tr><td>myir.io + Personal Brand</td><td>Data-driven reflection, year-end content</td></tr>
+    <tr><td>DynoClaw + ParallelScore</td><td>AI in healthcare narrative</td></tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="workflows">3. Daily &amp; Weekly Workflows</h2>
+
+  <h3 id="cron-schedule">Automated Schedule (Cron)</h3>
+  <p>These run automatically. The growth agent's crons are offset by 1 hour to avoid conflicts.</p>
+
+  <table>
+    <tr><th>When</th><th>Agent</th><th>Skill</th><th>What Happens</th></tr>
+    <tr>
+      <td><span class="badge badge-cron">Mon 1:00 AM UTC</span></td>
+      <td>Main</td>
+      <td><code>/content-engine</code></td>
+      <td>Generates the week's content calendar</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cron">Mon 1:00 AM UTC</span></td>
+      <td>Growth</td>
+      <td><code>/content-engine</code></td>
+      <td>Growth agent's own content calendar</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cron">Daily 1:00 PM UTC</span></td>
+      <td>Main</td>
+      <td><code>/daily-briefing</code></td>
+      <td>Morning news briefing (Tech, Health IT, Africa, Fintech)</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cron">Daily 1:00 PM UTC</span></td>
+      <td>Main</td>
+      <td><code>/daily-posts</code></td>
+      <td>Drafts today's LinkedIn/X posts from calendar</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cron">Daily 2:00 PM UTC</span></td>
+      <td>Growth</td>
+      <td><code>/daily-posts</code></td>
+      <td>Growth agent's daily posts</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cron">Tue 2:00 PM UTC</span></td>
+      <td>Main</td>
+      <td><code>/newsletter-writer</code></td>
+      <td>Drafts weekly Beehiiv newsletter</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cron">Tue 3:00 PM UTC</span></td>
+      <td>Growth</td>
+      <td><code>/newsletter-writer</code></td>
+      <td>Growth agent's newsletter draft</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cron">Fri 6:00 PM UTC</span></td>
+      <td>Main</td>
+      <td><code>/engagement-monitor</code></td>
+      <td>Weekly social media analytics report</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-cron">Fri 7:00 PM UTC</span></td>
+      <td>Growth</td>
+      <td><code>/engagement-monitor</code></td>
+      <td>Growth agent's engagement analysis</td>
+    </tr>
+  </table>
+
+  <h3>On-Demand Skills <span class="badge badge-manual">Manual</span></h3>
+  <p>These are triggered by sending the command to the appropriate Telegram bot.</p>
+  <ul>
+    <li><code>/product-update</code> &mdash; Log a product milestone (main bot)</li>
+    <li><code>/growth-hacker</code> &mdash; Growth strategy, experiments, competitor scans (growth bot)</li>
+    <li><code>/job-hunter</code> &mdash; Job search, company research, outreach drafts (main bot)</li>
+    <li><code>/dynoclux</code> &mdash; Privacy enforcement, inbox scanning, unsubscribes (main bot)</li>
+    <li><code>/dynosist</code> &mdash; Email draft composition with attachments (main bot)</li>
+  </ul>
+
+  <h3 id="content-lifecycle">Content Lifecycle</h3>
+  <div class="diagram">
+Monday:    /content-engine  ──►  Generates weekly calendar  ──►  Stores CONTENT CALENDAR
+                                                                         │
+Daily:     /daily-briefing  ──►  News briefing  ──►  Stores DAILY BRIEFING
+                                                                         │
+Daily:     /daily-posts     ──►  Reads calendar + product updates  ──►  Creates Postiz drafts
+                                                                         │
+Tuesday:   /newsletter-writer ──► Reads briefings + calendar + growth signals ──► Creates Beehiiv draft
+                                                                         │
+Friday:    /engagement-monitor ──► Analyzes week's performance ──► Stores ENGAGEMENT INSIGHTS
+                                                                         │
+                                         ▼
+                          Feeds back into next Monday's /content-engine</div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="skills">4. Skills Reference</h2>
+
+  <div class="skill" id="skill-daily-briefing">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x1F4F0;</span>
+      <span class="skill-name">/daily-briefing</span>
+      <span class="badge badge-auto">Auto Daily</span>
+    </div>
+    <p class="skill-desc">Curated morning news briefing covering Tech, Healthcare &amp; Health IT, Africa Business &amp; Tech, and Fintech &amp; Investment.</p>
+    <dl class="skill-detail">
+      <dt>How it works</dt>
+      <dd>Runs 4 web searches for stories from the last 24 hours. Picks top 3 stories per topic. Outputs a formatted briefing with headlines, summaries, and sources.</dd>
+      <dt>Stores to Knowledge DB</dt>
+      <dd><code>DAILY BRIEFING [date]: ...</code> &mdash; 150-word condensed extract with the top story from each section</dd>
+      <dt>Consumed by</dt>
+      <dd><code>/newsletter-writer</code>, <code>/growth-hacker</code> audit mode</dd>
+    </dl>
+  </div>
+
+  <div class="skill" id="skill-content-engine">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x1F5D3;</span>
+      <span class="skill-name">/content-engine</span>
+      <span class="badge badge-auto">Auto Monday</span>
+    </div>
+    <p class="skill-desc">Generates a 7-day content calendar (Mon&ndash;Sun) with platform assignments for LinkedIn, X, and newsletter topics.</p>
+    <dl class="skill-detail">
+      <dt>How it works</dt>
+      <dd>Runs 8 trend searches, pulls past engagement insights and growth metrics/product updates, generates a daily plan with platform, topic, format, key points, and hook idea.</dd>
+      <dt>Distribution rules</dt>
+      <dd>LinkedIn 3-4/week (Tue-Thu preferred), X 4-5/week, at least 1 both-platform day, weekends lighter. Max 1-2 products/day, rotate across the portfolio.</dd>
+      <dt>Stores to Knowledge DB</dt>
+      <dd><code>Content Calendar &mdash; Week of [date]</code> with tags <code>content-calendar</code></dd>
+      <dt>Consumed by</dt>
+      <dd><code>/daily-posts</code>, <code>/newsletter-writer</code>, <code>/growth-hacker</code></dd>
+    </dl>
+  </div>
+
+  <div class="skill" id="skill-daily-posts">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x270D;</span>
+      <span class="skill-name">/daily-posts</span>
+      <span class="badge badge-auto">Auto Daily</span>
+    </div>
+    <p class="skill-desc">Drafts LinkedIn and/or X posts for today based on the content calendar. Creates Postiz drafts for review.</p>
+    <dl class="skill-detail">
+      <dt>Modes</dt>
+      <dd><strong>Calendar-driven</strong> (default) &mdash; reads today's calendar entry. <strong>Ad-hoc</strong> &mdash; <code>/daily-posts [topic]</code> to skip the calendar.</dd>
+      <dt>Enrichment</dt>
+      <dd>If today's entry references a product, searches for <code>PRODUCT UPDATE</code> and <code>COMPETITOR INTEL</code> to incorporate real details.</dd>
+      <dt>LinkedIn format</dt>
+      <dd>300-700 words, narrative/first-person, hook &rarr; story &rarr; takeaway &rarr; CTA, hashtags at end.</dd>
+      <dt>X format</dt>
+      <dd>Single: under 280 chars, punchy. Thread: 4-7 tweets numbered 1/, 2/, etc.</dd>
+      <dt>Approval flow</dt>
+      <dd>Presents drafts &rarr; user says <code>approve both</code>, <code>approve linkedin</code>, <code>approve x</code>, or <code>edit [feedback]</code> &rarr; creates Postiz draft.</dd>
+    </dl>
+  </div>
+
+  <div class="skill" id="skill-newsletter-writer">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x1F4E7;</span>
+      <span class="skill-name">/newsletter-writer</span>
+      <span class="badge badge-auto">Auto Tuesday</span>
+    </div>
+    <p class="skill-desc">Drafts a weekly newsletter synthesizing the week's content, engagement, briefings, and growth findings into a Beehiiv draft.</p>
+    <dl class="skill-detail">
+      <dt>Data sources</dt>
+      <dd>Content calendar, engagement insights, <code>DAILY BRIEFING</code> summaries, <code>GROWTH EXPERIMENT RESULT</code>, <code>COMPETITOR INTEL</code>, Postiz analytics (7d).</dd>
+      <dt>Structure</dt>
+      <dd>Subject line &rarr; Opening hook (2-3 sentences) &rarr; Main read (400-600 words) &rarr; Quick hits (3-4 bullets) &rarr; What I'm building (2-3 sentences, references actual <code>PRODUCT UPDATE</code> entries) &rarr; CTA</dd>
+      <dt>Approval flow</dt>
+      <dd>Shows 3 subject line options (direct, curiosity, bold). User says <code>publish [1/2/3]</code> or <code>edit [feedback]</code>. Creates Beehiiv draft on publish.</dd>
+      <dt>Target length</dt>
+      <dd>600-900 words, readable in 3-4 minutes.</dd>
+    </dl>
+  </div>
+
+  <div class="skill" id="skill-engagement-monitor">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x1F4CA;</span>
+      <span class="skill-name">/engagement-monitor</span>
+      <span class="badge badge-auto">Auto Friday</span>
+    </div>
+    <p class="skill-desc">Analyzes LinkedIn and X engagement from the past week, identifies patterns, and stores insights for future content planning.</p>
+    <dl class="skill-detail">
+      <dt>How it works</dt>
+      <dd>Pulls Postiz analytics (7d) and recent posts. Identifies top 3 and bottom 3 performers per platform. Extracts patterns (topic, format, timing, hook style).</dd>
+      <dt>Stores to Knowledge DB</dt>
+      <dd><code>Engagement Insights &mdash; Week of [date]</code> with tags <code>engagement-insights</code></dd>
+      <dt>Consumed by</dt>
+      <dd><code>/content-engine</code> (weights topics), <code>/newsletter-writer</code>, <code>/growth-hacker</code></dd>
+    </dl>
+  </div>
+
+  <div class="skill" id="skill-product-update">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x1F680;</span>
+      <span class="skill-name">/product-update</span>
+      <span class="badge badge-manual">On-demand</span>
+    </div>
+    <p class="skill-desc">Log product milestones, launches, and significant updates to the knowledge DB. Consumed by content and growth skills.</p>
+    <dl class="skill-detail">
+      <dt>How it works</dt>
+      <dd>Asks which product + update type (Launch, Milestone, Pivot, Insight). Stores a concise entry under 200 words.</dd>
+      <dt>Stores to Knowledge DB</dt>
+      <dd><code>PRODUCT UPDATE [product] [date]: ...</code> with tags <code>product-update, [product]</code></dd>
+      <dt>Consumed by</dt>
+      <dd><code>/content-engine</code> (timely content angles), <code>/daily-posts</code> (real details), <code>/newsletter-writer</code> ("What I'm building"), <code>/growth-hacker</code> (audit)</dd>
+      <dt>Shortcut</dt>
+      <dd>If you include product + update inline (e.g., <code>/product-update DynoClaw launched plugin marketplace</code>), it skips the questions.</dd>
+    </dl>
+  </div>
+
+  <div class="skill" id="skill-growth-hacker">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x1F4C8;</span>
+      <span class="skill-name">/growth-hacker</span>
+      <span class="badge badge-manual">On-demand</span>
+    </div>
+    <p class="skill-desc">Multi-product growth strategy with 6 modes. Runs on the growth bot (@JonnymateGrowthBot).</p>
+    <dl class="skill-detail">
+      <dt>Mode 1: Audit</dt>
+      <dd>Pulls engagement data, content calendar, product updates, and web research. Presents channel health table, key metrics, opportunities, risks.</dd>
+      <dt>Mode 2: Experiment</dt>
+      <dd>Proposes a testable growth experiment with hypothesis, method, success metric, effort/impact. Stores results: <code>GROWTH EXPERIMENT RESULT [product] [date]: ...</code></dd>
+      <dt>Mode 3: Cross-Promote</dt>
+      <dd>Drafts content connecting 2 products naturally. LinkedIn post + X thread + newsletter mention.</dd>
+      <dt>Mode 4: Competitor Scan</dt>
+      <dd>Researches competitors for a product. Stores findings: <code>COMPETITOR INTEL [product] [date]: ...</code></dd>
+      <dt>Mode 5: Funnel Analysis</dt>
+      <dd>Identifies drop-off points in a product funnel with industry benchmarks and recommended experiments.</dd>
+      <dt>Mode 6: Log Metrics</dt>
+      <dd>Records current growth metrics. Stores: <code>GROWTH METRICS [product] [date]: ...</code></dd>
+    </dl>
+  </div>
+
+  <div class="skill" id="skill-job-hunter">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x1F3AF;</span>
+      <span class="skill-name">/job-hunter</span>
+      <span class="badge badge-manual">On-demand</span>
+    </div>
+    <p class="skill-desc">Job search, company research, and outreach drafting. All outputs are draft-only.</p>
+    <dl class="skill-detail">
+      <dt>Mode 1: Find Roles</dt>
+      <dd>Web search for matching positions with fit scoring (Strong/Good/Stretch).</dd>
+      <dt>Mode 2: Crawl a Careers Site</dt>
+      <dd>Give it a URL and it scrapes for relevant listings.</dd>
+      <dt>Mode 3: Research a Company</dt>
+      <dd>Deep dive: what they do, recent news, leadership, tech stack, culture, where Bayo fits.</dd>
+      <dt>Mode 4: Draft Outreach</dt>
+      <dd>LinkedIn connection request (300 chars), short email (~150 words), warm intro request (~100 words).</dd>
+      <dt>Mode 5: Read a PDF</dt>
+      <dd>Extract and analyze a resume or job description.</dd>
+    </dl>
+  </div>
+
+  <div class="skill" id="skill-dynoclux">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x1F6E1;</span>
+      <span class="skill-name">/dynoclux</span>
+      <span class="badge badge-manual">On-demand</span>
+    </div>
+    <p class="skill-desc">Privacy enforcement: inbox scanning, unsubscribes, CAN-SPAM/CCPA compliance tracking, and formal notice drafting.</p>
+    <dl class="skill-detail">
+      <dt>8 Modes</dt>
+      <dd>Scan inbox &rarr; Noise report &rarr; Unsubscribe (with confirmation) &rarr; Track request (legal deadlines) &rarr; Check violations &rarr; Draft notice &rarr; Evidence log &rarr; List requests</dd>
+      <dt>Key detail</dt>
+      <dd>Unsubscribes always require confirmation. Legal notices are draft-only, never sent automatically. CAN-SPAM = 10 business days. CCPA = 45 calendar days.</dd>
+    </dl>
+  </div>
+
+  <div class="skill" id="skill-dynosist">
+    <div class="skill-header">
+      <span class="skill-emoji">&#x1F4E7;</span>
+      <span class="skill-name">/dynosist</span>
+      <span class="badge badge-manual">On-demand</span>
+    </div>
+    <p class="skill-desc">Gmail draft assistant: compose drafts, attach files, search emails, manage drafts.</p>
+    <dl class="skill-detail">
+      <dt>5 Modes</dt>
+      <dd>Compose draft &rarr; Email a file (finds recent uploads) &rarr; List drafts &rarr; Find files &rarr; Search emails (supports Gmail query operators)</dd>
+      <dt>Key detail</dt>
+      <dd>Never sends directly. Always creates Gmail drafts for manual review and send. Shows preview before creating.</dd>
+    </dl>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="knowledge-db">5. Knowledge DB &amp; Cross-Agent Data</h2>
+  <p>Both agents share a Convex vector database. Since there's no tag filtering on search, every <code>knowledge_store</code> call uses a distinctive text prefix so vector similarity naturally groups the right content.</p>
+
+  <h3>Prefix Convention</h3>
+  <table>
+    <tr><th>Prefix</th><th>Stored By</th><th>Consumed By</th></tr>
+    <tr>
+      <td><code>DAILY BRIEFING [date]:</code></td>
+      <td>/daily-briefing</td>
+      <td>/newsletter-writer, /growth-hacker audit</td>
+    </tr>
+    <tr>
+      <td><code>PRODUCT UPDATE [product] [date]:</code></td>
+      <td>/product-update</td>
+      <td>/growth-hacker audit, /content-engine, /daily-posts</td>
+    </tr>
+    <tr>
+      <td><code>COMPETITOR INTEL [product] [date]:</code></td>
+      <td>/growth-hacker scan</td>
+      <td>/newsletter-writer, /daily-posts</td>
+    </tr>
+    <tr>
+      <td><code>GROWTH EXPERIMENT RESULT [product] [date]:</code></td>
+      <td>/growth-hacker experiment</td>
+      <td>/newsletter-writer, /content-engine</td>
+    </tr>
+    <tr>
+      <td><code>GROWTH METRICS [product] [date]:</code></td>
+      <td>/growth-hacker log metrics</td>
+      <td>/content-engine, /growth-hacker audit</td>
+    </tr>
+    <tr>
+      <td><code>Engagement Insights &mdash; Week of [date]</code></td>
+      <td>/engagement-monitor</td>
+      <td>/content-engine, /newsletter-writer, /growth-hacker</td>
+    </tr>
+    <tr>
+      <td><code>Content Calendar &mdash; Week of [date]</code></td>
+      <td>/content-engine</td>
+      <td>/daily-posts, /newsletter-writer, /growth-hacker</td>
+    </tr>
+  </table>
+
+  <h3>Data Flow</h3>
+  <div class="diagram">
+JONNY MATE                              KNOWLEDGE DB                           GROWTHCLAW
+-----------                             ------------                           ----------
+/daily-briefing  ──store──►  DAILY BRIEFING       ◄──read──  /growth-hacker (audit)
+/product-update  ──store──►  PRODUCT UPDATE       ◄──read──  /growth-hacker (audit)
+                                                              /content-engine
+/engagement-mon  ──store──►  ENGAGEMENT INSIGHTS  ◄──read──  /growth-hacker (audit)
+/content-engine  ──store──►  CONTENT CALENDAR     ◄──read──  /daily-posts
+                                                              /newsletter-writer
+/newsletter-writer ◄──read── COMPETITOR INTEL     ◄──store── /growth-hacker (scan)
+/daily-posts       ◄──read── GROWTH EXPERIMENT    ◄──store── /growth-hacker (experiment)
+/content-engine    ◄──read── GROWTH METRICS       ◄──store── /growth-hacker (metrics)</div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="brand-voice">6. Brand Voice</h2>
+
+  <div class="card">
+    <h3>Core Tone</h3>
+    <ul>
+      <li><strong>Smart friend</strong> &mdash; like a knowledgeable friend sharing insights over coffee</li>
+      <li><strong>Builder perspective</strong> &mdash; speak from the lens of someone actively building</li>
+      <li><strong>Direct</strong> &mdash; get to the point, no filler, no throat-clearing</li>
+    </ul>
+  </div>
+
+  <h3>Platform Adjustments</h3>
+  <table>
+    <tr><th>Platform</th><th>Tone</th><th>Format</th><th>Avoid</th></tr>
+    <tr>
+      <td><strong>LinkedIn</strong></td>
+      <td>Narrative, reflective, professional but human</td>
+      <td>300-700 words, story-driven, hook in first 2 lines</td>
+      <td>Corporate jargon, "excited to announce", humble-bragging</td>
+    </tr>
+    <tr>
+      <td><strong>X</strong></td>
+      <td>Punchy, opinionated, conversational</td>
+      <td>&lt;280 chars or 4-7 tweet threads</td>
+      <td>Thread-bait without substance, engagement farming</td>
+    </tr>
+    <tr>
+      <td><strong>Newsletter</strong></td>
+      <td>Personal letter, most intimate channel</td>
+      <td>600-900 words, 1 deep dive + quick hits + building update</td>
+      <td>Listicles without narrative, news regurgitation</td>
+    </tr>
+  </table>
+
+  <h3>Language Patterns</h3>
+  <div class="card">
+    <h4 style="color: var(--green);">Use</h4>
+    <ul>
+      <li>"Here's what I learned..."</li>
+      <li>"I've been thinking about..."</li>
+      <li>"The thing nobody talks about is..."</li>
+      <li>"After building X, I realized..."</li>
+      <li>Specific numbers and examples</li>
+      <li>Honest admissions of what didn't work</li>
+    </ul>
+    <h4 style="color: var(--red);">Avoid</h4>
+    <ul>
+      <li>"In today's fast-paced world..."</li>
+      <li>"Leveraging synergies"</li>
+      <li>"Game-changer", "disruptive", "revolutionary"</li>
+      <li>Excessive exclamation marks</li>
+      <li>Generic motivational quotes</li>
+    </ul>
+  </div>
+
+  <h3>Product Mentions</h3>
+  <ul>
+    <li><strong>Max 2 products per post</strong> &mdash; rotate daily across the portfolio</li>
+    <li><strong>Show, don't sell</strong> &mdash; mention products in context of lessons learned</li>
+    <li><strong>Never hard-sell</strong> &mdash; the audience follows for insights, not ads</li>
+    <li><strong>Never same product two days in a row</strong></li>
+  </ul>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="troubleshooting">7. Troubleshooting</h2>
+
+  <h3>Quick Checks</h3>
+  <pre><code># SSH into the VM
+gcloud compute ssh openclaw-vm --zone=us-central1-a --project=jonny-mate
+
+# Check gateway status
+sudo systemctl status openclaw
+
+# View today's logs (last 50 lines)
+sudo tail -50 /tmp/openclaw/openclaw-$(date +%F).log
+
+# Check if both bots are online
+sudo journalctl -u openclaw --since "5 min ago" | grep "starting provider"
+
+# List agents
+sudo openclaw agents list
+
+# List registered skills
+sudo openclaw skills list
+
+# List cron jobs
+sudo openclaw cron list</code></pre>
+
+  <h3>Common Issues</h3>
+  <table>
+    <tr><th>Problem</th><th>Diagnosis</th><th>Fix</th></tr>
+    <tr>
+      <td>Bot not responding on Telegram</td>
+      <td>Check <code>systemctl status openclaw</code></td>
+      <td><code>sudo systemctl restart openclaw</code></td>
+    </tr>
+    <tr>
+      <td>Skills not appearing</td>
+      <td>Check <code>openclaw skills list</code> for "ready" count</td>
+      <td>Verify SKILL.md files exist in <code>/root/.openclaw/skills/</code></td>
+    </tr>
+    <tr>
+      <td>API key errors in logs</td>
+      <td>Look for "No API key found" in logs</td>
+      <td>Check <code>/etc/openclaw.env</code> has the right keys; restart gateway</td>
+    </tr>
+    <tr>
+      <td>Cron job not firing</td>
+      <td>Check <code>openclaw cron list</code></td>
+      <td>Re-add: <code>sudo openclaw cron add --name 'X' --cron 'SCHEDULE' --message '/skill'</code></td>
+    </tr>
+    <tr>
+      <td>Growth bot issues only</td>
+      <td>Check growth agent specifically</td>
+      <td>Verify <code>/root/.openclaw/agents/growth/agent/</code> has SOUL.md and skills/</td>
+    </tr>
+    <tr>
+      <td>Knowledge DB not storing</td>
+      <td>Check CONVEX_URL in <code>/etc/openclaw.env</code></td>
+      <td>Verify Convex deployment is running at the configured URL</td>
+    </tr>
+    <tr>
+      <td>Postiz draft creation fails</td>
+      <td>Check Postiz URL and API key</td>
+      <td>Verify in <code>/root/.openclaw/openclaw.json</code> under plugins.entries.postiz</td>
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="deployment">8. Deployment &amp; Maintenance</h2>
+
+  <h3>Deploy Updated Skills</h3>
+  <pre><code># From the repo root on your local machine:
+
+# 1. Bundle skills
+tar -czf /tmp/skills.tar.gz -C skills \
+  daily-briefing/SKILL.md \
+  content-engine/SKILL.md \
+  daily-posts/SKILL.md \
+  newsletter-writer/SKILL.md \
+  engagement-monitor/SKILL.md \
+  dynoclux/SKILL.md \
+  dynosist/SKILL.md \
+  job-hunter/SKILL.md \
+  growth-hacker/SKILL.md \
+  product-update/SKILL.md
+
+# 2. Copy to VM
+gcloud compute scp /tmp/skills.tar.gz \
+  openclaw-vm:/tmp/skills.tar.gz \
+  --zone=us-central1-a --project=jonny-mate
+
+# 3. Extract on VM
+gcloud compute ssh openclaw-vm --zone=us-central1-a --project=jonny-mate \
+  -- "sudo tar -xzf /tmp/skills.tar.gz -C /root/.openclaw/skills/ && rm /tmp/skills.tar.gz"
+
+# 4. Restart gateway
+gcloud compute ssh openclaw-vm --zone=us-central1-a --project=jonny-mate \
+  -- "sudo systemctl restart openclaw"</code></pre>
+
+  <h3>Deploy Shared Files (PRODUCTS.md, BRAND-VOICE.md)</h3>
+  <pre><code># Copy to both workspaces
+gcloud compute scp agents/shared/PRODUCTS.md agents/shared/BRAND-VOICE.md \
+  openclaw-vm:/tmp/ --zone=us-central1-a --project=jonny-mate
+
+gcloud compute ssh openclaw-vm --zone=us-central1-a --project=jonny-mate \
+  -- "sudo cp /tmp/PRODUCTS.md /tmp/BRAND-VOICE.md /root/.openclaw/workspace/ && \
+      sudo cp /tmp/PRODUCTS.md /tmp/BRAND-VOICE.md /root/.openclaw/workspace-growth/"</code></pre>
+
+  <h3>Upgrade OpenClaw Version</h3>
+  <pre><code># SSH into VM
+gcloud compute ssh openclaw-vm --zone=us-central1-a --project=jonny-mate
+
+# Install new version
+sudo npm install -g openclaw@NEW_VERSION
+
+# Verify
+openclaw --version
+
+# Restart
+sudo systemctl restart openclaw</code></pre>
+
+  <h3>Manage Secrets</h3>
+  <pre><code># List all secrets
+gcloud secrets list --project=jonny-mate
+
+# View a secret
+gcloud secrets versions access latest --secret=SECRET_NAME --project=jonny-mate
+
+# Update a secret
+echo -n "NEW_VALUE" | gcloud secrets versions add SECRET_NAME \
+  --data-file=- --project=jonny-mate</code></pre>
+
+  <h3>Key File Paths on VM</h3>
+  <table>
+    <tr><th>Path</th><th>Purpose</th></tr>
+    <tr><td><code>/root/.openclaw/openclaw.json</code></td><td>Main config (plugins, channels, models)</td></tr>
+    <tr><td><code>/root/.openclaw/skills/</code></td><td>Global skills directory (all SKILL.md files)</td></tr>
+    <tr><td><code>/root/.openclaw/workspace/</code></td><td>Main agent workspace (SOUL.md, AGENTS.md, etc.)</td></tr>
+    <tr><td><code>/root/.openclaw/workspace-growth/</code></td><td>Growth agent workspace</td></tr>
+    <tr><td><code>/root/.openclaw/agents/main/agent/</code></td><td>Main agent config</td></tr>
+    <tr><td><code>/root/.openclaw/agents/growth/agent/</code></td><td>Growth agent config + SOUL.md + skills/</td></tr>
+    <tr><td><code>/root/.openclaw/extensions/</code></td><td>Plugin installations (convex, postiz, beehiiv, etc.)</td></tr>
+    <tr><td><code>/etc/openclaw.env</code></td><td>Environment file with all API keys</td></tr>
+    <tr><td><code>/tmp/openclaw/</code></td><td>Log files (openclaw-YYYY-MM-DD.log)</td></tr>
+  </table>
+
+  <h3>Full Redeploy from Scratch</h3>
+  <pre><code># From the dynoclaw repo root:
+GCP_PROJECT=jonny-mate bash infra/gcp/deploy-openclaw.sh    # Main VM + plugins + skills
+GCP_PROJECT=jonny-mate bash infra/gcp/setup-growth-agent.sh # Add growth agent</code></pre>
+
+  <div class="card" style="margin-top: 48px; text-align: center; color: var(--text-muted);">
+    <p><strong>Important Guardrails</strong></p>
+    <p>All content outputs are <strong>draft-only</strong> &mdash; nothing is published automatically.<br>
+    Gmail actions create drafts only &mdash; never send directly.<br>
+    GitHub actions create PRs &mdash; never merge automatically.<br>
+    No secrets in code. All keys live in GCP Secret Manager.</p>
+  </div>
+
+</div>
+
+<script>
+// Close sidebar on mobile when a link is clicked
+document.querySelectorAll('.sidebar a').forEach(a => {
+  a.addEventListener('click', () => {
+    if (window.innerWidth <= 900) {
+      document.querySelector('.sidebar').classList.remove('open');
+    }
+  });
+});
+</script>
+
+</body>
+</html>
