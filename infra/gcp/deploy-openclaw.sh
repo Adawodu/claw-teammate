@@ -183,7 +183,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 EnvironmentFile=/etc/openclaw.env
-ExecStartPre=/usr/bin/env openclaw security audit
+ExecStartPre=/usr/bin/env openclaw security audit --fix
 ExecStart=/usr/bin/env openclaw gateway run --bind loopback
 Restart=always
 RestartSec=10
@@ -337,6 +337,63 @@ install_image_gen_plugin() {
     -- "sudo cp /tmp/image-gen-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
 }
 
+install_dynosist_plugin() {
+  local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/dynosist"
+  local PLUGIN_DEST="/root/.openclaw/extensions/dynosist"
+
+  echo "==> Installing DynoSist plugin files..."
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo mkdir -p ${PLUGIN_DEST} && mkdir -p /tmp/dynosist-plugin"
+  gcloud compute scp \
+    "${PLUGIN_SRC}/package.json" \
+    "${PLUGIN_SRC}/index.ts" \
+    "${PLUGIN_SRC}/openclaw.plugin.json" \
+    "${VM_NAME}:/tmp/dynosist-plugin/" \
+    --zone="${ZONE}" --project="${PROJECT}"
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo cp /tmp/dynosist-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
+}
+
+install_web_tools_plugin() {
+  local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/web-tools"
+  local PLUGIN_DEST="/root/.openclaw/extensions/web-tools"
+
+  echo "==> Installing Web Tools plugin files..."
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo mkdir -p ${PLUGIN_DEST} && mkdir -p /tmp/web-tools-plugin"
+  gcloud compute scp \
+    "${PLUGIN_SRC}/package.json" \
+    "${PLUGIN_SRC}/index.ts" \
+    "${PLUGIN_SRC}/openclaw.plugin.json" \
+    "${VM_NAME}:/tmp/web-tools-plugin/" \
+    --zone="${ZONE}" --project="${PROJECT}"
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo cp /tmp/web-tools-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
+}
+
+install_twitter_research_plugin() {
+  local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/twitter-research"
+  local PLUGIN_DEST="/root/.openclaw/extensions/twitter-research"
+
+  echo "==> Installing Twitter Research plugin files..."
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo mkdir -p ${PLUGIN_DEST} && mkdir -p /tmp/twitter-research-plugin"
+  gcloud compute scp \
+    "${PLUGIN_SRC}/package.json" \
+    "${PLUGIN_SRC}/index.ts" \
+    "${PLUGIN_SRC}/openclaw.plugin.json" \
+    "${VM_NAME}:/tmp/twitter-research-plugin/" \
+    --zone="${ZONE}" --project="${PROJECT}"
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo cp /tmp/twitter-research-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
+}
+
 # ── Configure all plugins atomically ─────────────────────────────────
 # Fetches all secrets, then patches openclaw.json with plugin entries in
 # one shot. This avoids the global validation issue with `openclaw config set`.
@@ -357,6 +414,7 @@ configure_all_plugins() {
   GITHUB_TOKEN="$(gcloud secrets versions access latest --secret=github-token --project="${PROJECT}" || true)"
   GITHUB_DEFAULT_OWNER="$(gcloud secrets versions access latest --secret=github-default-owner --project="${PROJECT}" || echo "Adawodu")"
   GMAIL_REFRESH_TOKEN="$(gcloud secrets versions access latest --secret=gmail-oauth-refresh-token --project="${PROJECT}" || true)"
+  TWITTER_BEARER_TOKEN="$(gcloud secrets versions access latest --secret=twitter-bearer-token --project="${PROJECT}" || true)"
 
   echo "==> Patching openclaw.json with plugin configs..."
   # Build a node script that reads current config and merges plugin entries
@@ -373,10 +431,13 @@ config.plugins.entries = Object.assign(config.plugins.entries || {}, {
   "video-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveClientId: process.env.DRIVE_CLIENT_ID || undefined, driveClientSecret: process.env.DRIVE_CLIENT_SECRET || undefined, driveRefreshToken: process.env.DRIVE_REFRESH_TOKEN || undefined } },
   "image-gen": { enabled: true, config: { geminiApiKey: process.env.GOOGLE_AI_API_KEY, openaiApiKey: process.env.OPENAI_API_KEY, convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveClientId: process.env.DRIVE_CLIENT_ID || undefined, driveClientSecret: process.env.DRIVE_CLIENT_SECRET || undefined, driveRefreshToken: process.env.DRIVE_REFRESH_TOKEN || undefined } },
   "github": { enabled: true, config: { githubToken: process.env.GITHUB_TOKEN, defaultOwner: process.env.GITHUB_DEFAULT_OWNER || "Adawodu" } },
-  "dynoclux": { enabled: true, config: { gmailClientId: process.env.DRIVE_CLIENT_ID, gmailClientSecret: process.env.DRIVE_CLIENT_SECRET, gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN, convexUrl: process.env.CONVEX_URL } }
+  "dynoclux": { enabled: true, config: { gmailClientId: process.env.DRIVE_CLIENT_ID, gmailClientSecret: process.env.DRIVE_CLIENT_SECRET, gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN, convexUrl: process.env.CONVEX_URL } },
+  "dynosist": { enabled: true, config: { gmailClientId: process.env.DRIVE_CLIENT_ID, gmailClientSecret: process.env.DRIVE_CLIENT_SECRET, gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN } },
+  "web-tools": { enabled: true, config: {} },
+  "twitter-research": { enabled: true, config: { bearerToken: process.env.TWITTER_BEARER_TOKEN || undefined } }
 });
 // Ensure all plugins are in the allowlist
-const allPlugins = ["postiz", "convex-knowledge", "image-gen", "video-gen", "beehiiv", "telegram", "twitter-research", "github", "dynoclux"];
+const allPlugins = ["postiz", "convex-knowledge", "image-gen", "video-gen", "beehiiv", "telegram", "twitter-research", "github", "dynoclux", "dynosist", "web-tools"];
 config.plugins.allow = config.plugins.allow || [];
 for (const p of allPlugins) { if (!config.plugins.allow.includes(p)) config.plugins.allow.push(p); }
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -386,7 +447,7 @@ NODESCRIPT
 
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "sudo CONVEX_URL='${CONVEX_URL}' POSTIZ_URL='${POSTIZ_URL}' POSTIZ_API_KEY='${POSTIZ_API_KEY}' BEEHIIV_API_KEY='${BEEHIIV_API_KEY}' BEEHIIV_PUB_ID='${BEEHIIV_PUB_ID}' GOOGLE_AI_API_KEY='${GOOGLE_AI_API_KEY}' OPENAI_API_KEY='${OPENAI_API_KEY}' DRIVE_FOLDER_ID='${DRIVE_FOLDER_ID}' DRIVE_CLIENT_ID='${DRIVE_CLIENT_ID}' DRIVE_CLIENT_SECRET='${DRIVE_CLIENT_SECRET}' DRIVE_REFRESH_TOKEN='${DRIVE_REFRESH_TOKEN}' GITHUB_TOKEN='${GITHUB_TOKEN}' GITHUB_DEFAULT_OWNER='${GITHUB_DEFAULT_OWNER}' GMAIL_REFRESH_TOKEN='${GMAIL_REFRESH_TOKEN}' node -e '${PATCH_SCRIPT}'"
+    -- "sudo CONVEX_URL='${CONVEX_URL}' POSTIZ_URL='${POSTIZ_URL}' POSTIZ_API_KEY='${POSTIZ_API_KEY}' BEEHIIV_API_KEY='${BEEHIIV_API_KEY}' BEEHIIV_PUB_ID='${BEEHIIV_PUB_ID}' GOOGLE_AI_API_KEY='${GOOGLE_AI_API_KEY}' OPENAI_API_KEY='${OPENAI_API_KEY}' DRIVE_FOLDER_ID='${DRIVE_FOLDER_ID}' DRIVE_CLIENT_ID='${DRIVE_CLIENT_ID}' DRIVE_CLIENT_SECRET='${DRIVE_CLIENT_SECRET}' DRIVE_REFRESH_TOKEN='${DRIVE_REFRESH_TOKEN}' GITHUB_TOKEN='${GITHUB_TOKEN}' GITHUB_DEFAULT_OWNER='${GITHUB_DEFAULT_OWNER}' GMAIL_REFRESH_TOKEN='${GMAIL_REFRESH_TOKEN}' TWITTER_BEARER_TOKEN='${TWITTER_BEARER_TOKEN}' node -e '${PATCH_SCRIPT}'"
 
   echo "==> Restarting OpenClaw..."
   gcloud compute ssh "${VM_NAME}" \
@@ -410,7 +471,8 @@ install_skills() {
     engagement-monitor/SKILL.md \
     dynoclux/SKILL.md \
     growth-hacker/SKILL.md \
-    product-update/SKILL.md
+    product-update/SKILL.md \
+    dynosist/SKILL.md
 
   echo "==> Copying skills tarball to VM..."
   gcloud compute scp "${TARBALL}" \
@@ -461,6 +523,9 @@ install_video_gen_plugin
 install_image_gen_plugin
 install_github_plugin
 install_dynoclux_plugin
+install_dynosist_plugin
+install_web_tools_plugin
+install_twitter_research_plugin
 configure_all_plugins
 install_skills
 
