@@ -1,0 +1,9 @@
+{
+  "id": "youtube-transcriber",
+  "name": "YouTube Transcriber",
+  "configSchema": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  }
+}

@@ -394,6 +394,25 @@ install_twitter_research_plugin() {
     -- "sudo cp /tmp/twitter-research-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
 }
 
+install_youtube_transcriber_plugin() {
+  local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/youtube-transcriber"
+  local PLUGIN_DEST="/root/.openclaw/extensions/youtube-transcriber"
+
+  echo "==> Installing YouTube Transcriber plugin files..."
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo mkdir -p ${PLUGIN_DEST} && mkdir -p /tmp/youtube-transcriber-plugin"
+  gcloud compute scp \
+    "${PLUGIN_SRC}/package.json" \
+    "${PLUGIN_SRC}/index.ts" \
+    "${PLUGIN_SRC}/openclaw.plugin.json" \
+    "${VM_NAME}:/tmp/youtube-transcriber-plugin/" \
+    --zone="${ZONE}" --project="${PROJECT}"
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo cp /tmp/youtube-transcriber-plugin/* ${PLUGIN_DEST}/ && sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
+}
+
 # ── Configure all plugins atomically ─────────────────────────────────
 # Fetches all secrets, then patches openclaw.json with plugin entries in
 # one shot. This avoids the global validation issue with `openclaw config set`.
@@ -434,10 +453,11 @@ config.plugins.entries = Object.assign(config.plugins.entries || {}, {
   "dynoclux": { enabled: true, config: { gmailClientId: process.env.DRIVE_CLIENT_ID, gmailClientSecret: process.env.DRIVE_CLIENT_SECRET, gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN, convexUrl: process.env.CONVEX_URL } },
   "dynosist": { enabled: true, config: { gmailClientId: process.env.DRIVE_CLIENT_ID, gmailClientSecret: process.env.DRIVE_CLIENT_SECRET, gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN } },
   "web-tools": { enabled: true, config: {} },
-  "twitter-research": { enabled: true, config: { bearerToken: process.env.TWITTER_BEARER_TOKEN || undefined } }
+  "twitter-research": { enabled: true, config: { bearerToken: process.env.TWITTER_BEARER_TOKEN || undefined } },
+  "youtube-transcriber": { enabled: true, config: {} }
 });
 // Ensure all plugins are in the allowlist
-const allPlugins = ["postiz", "convex-knowledge", "image-gen", "video-gen", "beehiiv", "telegram", "twitter-research", "github", "dynoclux", "dynosist", "web-tools"];
+const allPlugins = ["postiz", "convex-knowledge", "image-gen", "video-gen", "beehiiv", "telegram", "twitter-research", "github", "dynoclux", "dynosist", "web-tools", "youtube-transcriber"];
 config.plugins.allow = config.plugins.allow || [];
 for (const p of allPlugins) { if (!config.plugins.allow.includes(p)) config.plugins.allow.push(p); }
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -526,6 +546,7 @@ install_dynoclux_plugin
 install_dynosist_plugin
 install_web_tools_plugin
 install_twitter_research_plugin
+install_youtube_transcriber_plugin
 configure_all_plugins
 install_skills
 
