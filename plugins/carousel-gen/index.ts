@@ -311,6 +311,9 @@ const carouselGenPlugin = {
               "--no-sandbox",
               "--disable-setuid-sandbox",
               "--disable-dev-shm-usage",
+              "--disable-gpu",
+              "--disable-extensions",
+              "--disable-background-networking",
             ],
           });
 
@@ -325,41 +328,52 @@ const carouselGenPlugin = {
             const page = await browser.newPage();
             await page.setViewport({ width: 1080, height: 1080 });
 
+            // Block external font requests — templates use local fallback fonts
+            await page.setRequestInterception(true);
+            page.on("request", (req: any) => {
+              if (req.resourceType() === "font" || req.url().includes("fonts.googleapis.com") || req.url().includes("fonts.gstatic.com")) {
+                req.abort();
+              } else {
+                req.continue();
+              }
+            });
+
             for (let i = 0; i < htmlSlides.length; i++) {
               await page.setContent(htmlSlides[i], {
-                waitUntil: "networkidle0",
+                waitUntil: "domcontentloaded",
               });
               const screenshot = await page.screenshot({
                 type: "png",
                 encoding: "base64",
               });
 
-              const slideResult: (typeof results)[number] = {
+              results.push({
                 slideIndex: i,
                 imageBase64: screenshot as string,
-              };
-
-              // Persist to Convex/Drive if configured
-              const stored = await persistMedia({
-                convexUrl,
-                driveFolderId,
-                driveClientId,
-                driveClientSecret,
-                driveRefreshToken,
-                base64Data: screenshot as string,
-                mimeType: "image/png",
-                prompt: `Carousel slide ${i + 1}/${total}: ${params.headline}`,
-                provider: "carousel-gen",
               });
-
-              if (stored.convexUrl) slideResult.convexUrl = stored.convexUrl;
-              if (stored.driveUrl) slideResult.driveUrl = stored.driveUrl;
-
-              results.push(slideResult);
             }
           } finally {
             await browser.close();
           }
+
+          // Persist all slides in parallel after browser is closed
+          const persistPromises = results.map((r, i) =>
+            persistMedia({
+              convexUrl,
+              driveFolderId,
+              driveClientId,
+              driveClientSecret,
+              driveRefreshToken,
+              base64Data: r.imageBase64,
+              mimeType: "image/png",
+              prompt: `Carousel slide ${i + 1}/${total}: ${params.headline}`,
+              provider: "carousel-gen",
+            }).then((stored) => {
+              if (stored.convexUrl) r.convexUrl = stored.convexUrl;
+              if (stored.driveUrl) r.driveUrl = stored.driveUrl;
+            })
+          );
+          await Promise.all(persistPromises);
 
           return json({
             status: "completed",

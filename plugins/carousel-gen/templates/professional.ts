@@ -11,14 +11,14 @@ export interface SlideContent {
   body?: string;
 }
 
-const FONT_IMPORT = `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">`;
+const FONT_IMPORT = `<style>/* System font stack — no external requests */</style>`;
 
 function baseStyles(brand: Brand) {
   return `
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       width: 1080px; height: 1080px;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       overflow: hidden;
       background: #ffffff;
     }

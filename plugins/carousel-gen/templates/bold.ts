@@ -1,13 +1,13 @@
 import type { Brand, SlideContent } from "./professional";
 
-const FONT_IMPORT = `<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">`;
+const FONT_IMPORT = `<style>/* System font stack — no external requests */</style>`;
 
 function baseStyles() {
   return `
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       width: 1080px; height: 1080px;
-      font-family: 'Montserrat', sans-serif;
+      font-family: 'Montserrat', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       overflow: hidden;
     }
   `;
