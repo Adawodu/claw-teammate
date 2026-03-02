@@ -1,0 +1,14 @@
+{
+  "id": "carousel-gen",
+  "name": "Carousel Generator",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "convexUrl": { "type": "string" },
+      "driveFolderId": { "type": "string" },
+      "driveClientId": { "type": "string" },
+      "driveClientSecret": { "type": "string" },
+      "driveRefreshToken": { "type": "string" }
+    }
+  }
+}
