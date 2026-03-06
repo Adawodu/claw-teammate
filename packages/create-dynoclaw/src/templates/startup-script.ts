@@ -44,6 +44,11 @@ if [ ! -f "\${MARKER}" ]; then
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
 
+  echo "==> Installing uv (Python package manager)..."
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  cp /root/.local/bin/uv /usr/local/bin/uv
+  cp /root/.local/bin/uvx /usr/local/bin/uvx
+
   echo "==> Installing OpenClaw..."
   npm install -g openclaw@${OPENCLAW_VERSION}
 

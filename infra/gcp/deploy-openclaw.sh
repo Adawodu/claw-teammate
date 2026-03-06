@@ -106,23 +106,26 @@ if [ ! -f "${MARKER}" ]; then
   echo "==> Installing OpenClaw..."
   npm install -g openclaw@2026.2.26
 
-  echo "==> Installing Bun + QMD..."
-  curl -fsSL https://bun.sh/install | bash
-  export BUN_INSTALL="/root/.bun"
-  export PATH="${BUN_INSTALL}/bin:${PATH}"
-  bun install -g https://github.com/tobi/qmd
-
-  echo "==> Installing agent-browser..."
-  npx playwright install --with-deps chromium
-  npm install -g agent-browser
-
   mkdir -p "${OPENCLAW_DIR}"
   touch "${MARKER}"
 fi
 
-# Ensure bun/qmd are on PATH for subsequent commands
+# ── Install Bun + QMD + agent-browser (idempotent) ───────────────────
 export BUN_INSTALL="/root/.bun"
 export PATH="${BUN_INSTALL}/bin:${PATH}"
+if ! command -v bun &>/dev/null; then
+  echo "==> Installing Bun..."
+  curl -fsSL https://bun.sh/install | bash
+fi
+if ! command -v qmd &>/dev/null; then
+  echo "==> Installing QMD..."
+  npm install -g @tobilu/qmd
+fi
+if ! command -v agent-browser &>/dev/null; then
+  echo "==> Installing agent-browser + Playwright Chromium..."
+  npm install -g agent-browser
+  npx playwright install --with-deps chromium
+fi
 
 # ── Upgrade OpenClaw if version differs ────────────────────────────
 DESIRED_VERSION="2026.2.26"
@@ -479,14 +482,14 @@ init_qmd_memory() {
   echo "==> Initializing QMD memory backend (update + embed)..."
   gcloud compute ssh "${VM_NAME}" \
     --zone="${ZONE}" --project="${PROJECT}" \
-    -- "export BUN_INSTALL=/root/.bun && export PATH=\${BUN_INSTALL}/bin:\${PATH} && \
+    -- "sudo bash -c 'export BUN_INSTALL=/root/.bun && export PATH=\${BUN_INSTALL}/bin:\${PATH} && \
         export XDG_CONFIG_HOME=/root/.openclaw/agents/main/qmd/xdg-config && \
         export XDG_CACHE_HOME=/root/.openclaw/agents/main/qmd/xdg-cache && \
         mkdir -p \${XDG_CONFIG_HOME} \${XDG_CACHE_HOME} && \
         qmd update && qmd embed && \
-        echo 'QMD index built successfully' && \
-        qmd query 'test' -c memory-root --json 2>/dev/null | head -5 && \
-        echo 'QMD verification complete'"
+        echo "QMD index built successfully" && \
+        qmd query "test" -c memory-root --json 2>/dev/null | head -5 && \
+        echo "QMD verification complete"'
 }
 
 # ── Configure all plugins atomically ─────────────────────────────────
@@ -600,6 +603,7 @@ install_skills() {
     dynosist/SKILL.md \
     agentmail/SKILL.md \
     agent-browser/SKILL.md \
+    comic-brief/SKILL.md \
     agent-browser/references/commands.md \
     agent-browser/references/snapshot-refs.md \
     agent-browser/references/session-management.md \

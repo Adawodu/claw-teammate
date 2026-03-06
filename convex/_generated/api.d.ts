@@ -10,6 +10,7 @@
 
 import type * as actionQueue from "../actionQueue.js";
 import type * as admin from "../admin.js";
+import type * as agentMemory from "../agentMemory.js";
 import type * as apiKeyRegistry from "../apiKeyRegistry.js";
 import type * as cmsPages from "../cmsPages.js";
 import type * as costActions from "../costActions.js";
@@ -43,6 +44,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   actionQueue: typeof actionQueue;
   admin: typeof admin;
+  agentMemory: typeof agentMemory;
   apiKeyRegistry: typeof apiKeyRegistry;
   cmsPages: typeof cmsPages;
   costActions: typeof costActions;

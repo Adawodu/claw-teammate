@@ -1,0 +1,31 @@
+{
+  "name": "@adawodu/claude-memory-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Convex-backed memory persistence in Claude Code / Kimi CLI",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "claude-memory-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "setup": "npm install && npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "convex": "^1.17.0",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["mcp", "convex", "memory", "claude", "claude-code", "kimi"],
+  "author": "adawodu",
+  "license": "MIT"
+}

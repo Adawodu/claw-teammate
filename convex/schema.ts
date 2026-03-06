@@ -288,4 +288,65 @@ export default defineSchema({
   })
     .index("by_section", ["section"])
     .index("by_visible", ["visible"]),
+
+  // ── Kimi Memory / Claude Code Memory Tables ───────────────────────
+
+  agentMemory: defineTable({
+    sessionId: v.string(),
+    userId: v.string(),
+    type: v.union(
+      v.literal("fact"),
+      v.literal("preference"),
+      v.literal("code_pattern"),
+      v.literal("decision"),
+      v.literal("context"),
+    ),
+    content: v.string(),
+    context: v.object({
+      projectPath: v.optional(v.string()),
+      files: v.optional(v.array(v.string())),
+      toolCalls: v.optional(v.array(v.string())),
+    }),
+    embedding: v.array(v.float64()),
+    importance: v.number(),
+    expiresAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: 1536,
+      filterFields: ["type", "userId"],
+    })
+    .index("by_sessionId", ["sessionId"])
+    .index("by_userId_createdAt", ["userId", "createdAt"])
+    .index("by_projectPath", ["context.projectPath"]),
+
+  agentSessions: defineTable({
+    sessionId: v.string(),
+    userId: v.string(),
+    startedAt: v.number(),
+    endedAt: v.optional(v.number()),
+    summary: v.optional(v.string()),
+    keyDecisions: v.array(
+      v.object({
+        decision: v.string(),
+        reasoning: v.string(),
+        files: v.array(v.string()),
+      }),
+    ),
+    todosCompleted: v.array(v.string()),
+    todosPending: v.array(
+      v.object({
+        task: v.string(),
+        priority: v.number(),
+      }),
+    ),
+    tokenUsage: v.object({
+      input: v.number(),
+      output: v.number(),
+      costUsd: v.number(),
+    }),
+  })
+    .index("by_userId_startedAt", ["userId", "startedAt"])
+    .index("by_sessionId", ["sessionId"]),
 });

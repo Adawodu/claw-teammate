@@ -102,6 +102,15 @@ export const SKILL_REGISTRY: SkillMeta[] = [
     cronDescription: "On-demand only",
     requiredPlugins: [],
   },
+  {
+    id: "comic-brief",
+    name: "Comic Brief",
+    description:
+      "Generate copy-paste-ready Gemini prompts for branded comic-style illustrations",
+    cron: null,
+    cronDescription: "On-demand only",
+    requiredPlugins: [],
+  },
 ];
 
 export function getSkillById(id: string): SkillMeta | undefined {

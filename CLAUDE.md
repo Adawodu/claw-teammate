@@ -1,31 +1,44 @@
-Draft-only for Gmail + Beehiiv + social
-PR-only for GitHub (no merge)
-No secrets in code
-No destructive commands
+# DynoClaw Project Notes
 
-## Vercel (Dashboard)
+## Memory MCP Server
 
-- Production: https://dynoclaw.com (custom domain, Cloudflare DNS)
-- Vercel project: `adawodu/dynoclaw`
-- Deploy: `npx vercel --prod --yes --token $VERCEL_TOKEN` from repo root
-- Env vars synced from `packages/dashboard/.env.local` to Vercel production
-- Build: Stripe and ConvexHttpClient must NOT be initialized at module scope (lazy init only)
+A persistent memory system for Claude Code/Kimi CLI has been set up using ConvexDB.
 
-## Knowledge DB (Convex)
-
-After completing significant tasks (new features, bug fixes, architecture decisions, config changes), store a concise summary in the Convex knowledge DB using:
+### Quick Commands
 
 ```bash
-curl -s -X POST https://fortunate-seahorse-362.convex.cloud/api/action \
-  -H 'Content-Type: application/json' \
-  -d "$(jq -n \
-    --arg text "CONCISE_SUMMARY" \
-    --argjson tags '["relevant","tags"]' \
-    '{path: "knowledgeActions:ingest", args: {text: $text, tags: $tags, source: "claude-code"}}')"
+# Deploy schema changes
+convex dev
+
+# Setup MCP server (after schema is deployed)
+bash setup-memory-mcp.sh
 ```
 
-What to store: key decisions, patterns discovered, bug root causes, config that worked, integration gotchas.
-What NOT to store: trivial changes, things already in CLAUDE.md, session-specific context.
-Use source `"claude-code"` always. Pick tags from: `architecture`, `gcp`, `convex`, `plugin`, `deploy`, `debug`, `config`, `workflow`, `preference`, `decision`, `api`, `auth` — or create new ones if needed.
+### Configuration
 
-Manual commands: `/remember <text>` to store, `/recall <query>` to search.
+MCP server is configured in `~/.claude.json`. Update `OPENAI_API_KEY` to activate.
+
+### Available Memory Tools
+
+Once configured, you can use:
+
+- `memory_store` - Save memories with semantic embeddings
+- `memory_recall` - Semantic search
+- `memory_search` - Keyword search  
+- `memory_get_context` - Get recent context
+- `memory_start_session` / `memory_end_session` - Session tracking
+
+### Schema Changes
+
+Added to `convex/schema.ts`:
+- `agentMemory` - Stores memories with 1536-dim embeddings
+- `agentSessions` - Tracks conversation sessions
+
+See `convex/agentMemory.ts` for all query/mutation functions.
+
+### Files
+
+- `convex/schema.ts` - Updated with memory tables
+- `convex/agentMemory.ts` - All Convex functions
+- `setup-memory-mcp.sh` - One-command setup script
+- `README-MEMORY-MCP.md` - Full documentation
