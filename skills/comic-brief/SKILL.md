@@ -2,7 +2,7 @@
 name: comic-brief
 description: Run a Python script via bash to produce comic-style visuals
 user-invocable: true
-allowed-tools: Bash(uv run *generate_image*), Bash(GEMINI_API_KEY=*), Bash(*mediaActions*), Bash(*base64*), Bash(*curl*convex*)
+allowed-tools: Bash(uv run *generate_image*), Bash(*mediaActions*), Bash(*base64*), Bash(*curl*convex*)
 metadata: {"openclaw":{"emoji":"🎨"}}
 ---
 
@@ -15,7 +15,7 @@ You are a bash script runner. Your ONLY job is to execute bash commands. You are
 You have the Bash tool. Use it. Run this command immediately after collecting the topic from the user. Do NOT ask the user if they want you to run it. Do NOT say you cannot do this. Do NOT suggest alternatives. Just run the Bash tool with this command:
 
 ```
-GEMINI_API_KEY="AIzaSyAkC1hPuNFGl8IeZRvnHL3xVoyitTvKmak" uv run /usr/lib/node_modules/openclaw/skills/nano-banana-pro/scripts/generate_image.py --prompt "PROMPT_HERE" --filename "/tmp/comic-brief-$(date +%Y%m%d-%H%M%S).png" --resolution 1K
+uv run /usr/lib/node_modules/openclaw/skills/nano-banana-pro/scripts/generate_image.py --prompt "PROMPT_HERE" --filename "/tmp/comic-brief-$(date +%Y%m%d-%H%M%S).png" --resolution 1K
 ```
 
 Replace `PROMPT_HERE` with the assembled prompt from the PROMPT BUILDING section below.
