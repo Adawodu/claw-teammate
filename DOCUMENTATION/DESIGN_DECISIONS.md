@@ -139,3 +139,38 @@
 **Context**: Early Convex queries used `resolveUserWithLegacy` which returned ownerless data for unauthenticated requests (pre-multi-tenant pattern from when Jonnymate was the only user).
 **Decision**: Replaced all `resolveUserWithLegacy` calls with `requireUser`. All Convex queries now require authentication. No more `__legacy__` sentinel or unauthenticated data access.
 **Consequences**: Stronger security posture. Any remaining unauthenticated canvas/VM calls will fail until migrated. Legacy data without userId is only accessible via admin queries.
+
+### DD-021: Mission Control as a Propose/Approve Action Queue
+**Date**: 2026-09-04
+**Status**: Accepted
+**Context**: Agents running across several workspaces (marketing, lead management, book) needed to perform real side effects — publishing posts, sending email, writing to CRM — but an agent acting unilaterally on external systems is unrecoverable when it is wrong.
+**Decision**: Agents never execute side effects directly. They write a proposal into `mcActions` via the `mission-control` plugin's `mc_propose_action`. A per-workspace, per-action-type `mcApprovalPolicy` row decides whether the action auto-runs (`auto`) or parks for human approval (`gated`). Approved actions move through an explicit `running → done | failed` lifecycle, and every transition is mirrored into an append-only `mcActivity` stream.
+**Consequences**: Gated actions add latency and require a human in the loop, and the agent must poll for approvals rather than acting inline. In exchange, every external effect has a reviewable proposal, an attributable decision (`decidedBy`/`decidedAt`), and a full audit trail. Policies can be relaxed per action type as trust builds, without changing agent code.
+
+### DD-022: Workspaces as the Unit of Agent Context
+**Date**: 2026-09-04
+**Status**: Accepted
+**Context**: Tasks, actions, and activity from unrelated efforts were competing in one flat namespace, and different agents (main, GrowthClaw) needed separate operating contexts.
+**Decision**: Introduce `workspaces` as the top-level container. Every task, action, approval policy, and activity row carries a `workspaceId`; a workspace optionally binds to a specific agent and declares a `kind`. Convex indexes are workspace-scoped (`by_workspace_status`, `by_workspace_state`, `by_workspace_createdAt`) so queries never scan across contexts.
+**Consequences**: Cross-workspace views require fan-out rather than a single query, and every write path must supply a workspace. In return, approval policy can differ per context (auto-post in marketing, gate everything in lead management) and the cockpit UI can render one context at a time without filtering client-side.
+
+### DD-023: Resolve OpenClaw Versions from the npm Registry at Runtime
+**Date**: 2026-09-04
+**Status**: Accepted
+**Context**: `OPENCLAW_VERSION` was a hardcoded constant, so every version bump required a code change and a redeploy, and every VM was forced onto the same version. There was no way to pin one customer to a known-good release or roll a single deployment forward.
+**Decision**: Resolve the version at request time, by precedence: an explicit pin from the caller, else the deployment's `desiredOpenClawVersion` (new field on `deployments`), else the latest stable from the npm registry via `packages/dashboard/lib/openclaw-versions.ts` and `/api/openclaw-versions` (5-minute in-process cache, 300s route revalidate, pre-releases filtered). `OPENCLAW_VERSION` is demoted to an **offline fallback** and the version baked into `create-dynoclaw` templates — it is no longer what installs.
+**Consequences**: Registry availability becomes a soft dependency of deploys and of the settings page, which must tolerate a 502. Because installs now track `latest`, the boot-time upgrade check had to become non-destructive — see DD-024.
+
+### DD-024: Auto-Update Weekly, and Never Downgrade on Boot
+**Date**: 2026-09-04
+**Status**: Accepted
+**Context**: VMs should stay on the latest stable OpenClaw, but the startup script installed whatever version was baked into it whenever the installed version *differed* — including older. Once anything updated a VM out of band, the next reboot would drag it back. A live VM was found running 2026.6.1 with metadata pinning 2026.4.25, one reboot away from a two-month downgrade.
+**Decision**: Two halves, both required. A weekly systemd timer (`openclaw-update.timer`, Sun 04:00 UTC, 30-minute jitter, `Persistent=true`) runs OpenClaw's own updater. The boot-time check compares with `sort -V` and only ever moves **forward**, so an explicit pin still upgrades a stale VM while an auto-updated one is left alone.
+**Consequences**: A VM can now be ahead of the version its startup script names, which is intended. Jitter avoids a fleet stampeding npm. The risk this introduces is that a plugin-API change can arrive silently through an update — exactly how the `contracts.tools` regression (DD-025) went unnoticed for three months — so `openclaw plugins doctor` belongs in the post-update routine.
+
+### DD-025: Plugin Manifests Must Declare `contracts.tools`
+**Date**: 2026-09-04
+**Status**: Accepted (forced by upstream)
+**Context**: Every custom plugin had silently stopped exposing tools to the agent. `openclaw plugins doctor` reported the same line for all sixteen: *plugin must declare contracts.tools before registering agent tools*. The plugins still loaded, still reported `enabled`, still appeared in the gateway's "Enabled extension plugins" line — and none of their tools reached the model. Nothing errored. It presented as the model being bad at tool use. Introduced by the upgrade to OpenClaw 2026.6.1 in June and undetected for roughly three months.
+**Decision**: Every `openclaw.plugin.json` declares the tool names its `index.ts` registers, plus `activation.onStartup`. Tool availability is verified by making the agent **call** a tool, never by asking it what tools it has — during diagnosis it twice reported "NONE" for families it could in fact call.
+**Consequences**: Adding a tool now means editing two files, and forgetting the manifest fails silently rather than loudly. `openclaw plugins doctor` is the only guard, so it runs after every upgrade. `image-gen` keeps its `image_generate` despite an identically-named built-in, because the custom one persists to Convex and Drive where the built-in only returns the image.

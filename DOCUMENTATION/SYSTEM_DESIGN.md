@@ -23,7 +23,7 @@ Serverless backend providing database, auth integration, and scheduled jobs.
 
 | File | Responsibility |
 |------|---------------|
-| `schema.ts` | 13-table schema definition with indexes and validators |
+| `schema.ts` | 34-table schema definition with indexes, vector index, and validators |
 | `auth.config.ts` | Clerk OIDC provider configuration for Convex |
 | `lib/auth.ts` | Auth helpers: requireUser, optionalUser, requireAdmin, requireDeploymentOwner |
 | `users.ts` | User sync (touch from Clerk identity), admin user management |
@@ -42,6 +42,14 @@ Serverless backend providing database, auth integration, and scheduled jobs.
 | `http.ts` | HTTP routes: cost dashboard, cost summary, storage proxy |
 | `crons.ts` | Scheduled jobs (cost fetch every 6 hours) |
 | `admin.ts` | Admin status check |
+| `missionControl.ts` | Mission Control cockpit: workspaces, task board, approval-gated action queue, activity log |
+| `jobSearch.ts` | Job hunt pipeline: target companies, listings, contacts, outreach, resumes, activity log |
+| `dynoclux` tables via `privacyRequests.ts` / `privacyViolations.ts` / `inboxScans.ts` / `actionQueue.ts` | Privacy enforcement: inbox scans, unsubscribe/deletion requests, violation tracking, queued actions |
+| `webinarSlides.ts` / `webinarLeads.ts` | Webinar deck content and lead capture |
+| `marketingImages.ts` | Marketing image library (landing/testimonial assets) |
+| `agentMemory.ts` | Agent long-term memory + session tracking (1536-dim embeddings, memory MCP server) |
+| `serviceOrders.ts` | Done-for-you service order records |
+| `mediaActions.ts` / `knowledgeActions.ts` | Actions for media persistence and knowledge ingestion |
 
 ### 3. Shared Library (`packages/shared/`)
 
@@ -72,6 +80,8 @@ OpenClaw tool plugins that extend the AI agent's capabilities.
 | Plugin | Key Functionality |
 |--------|------------------|
 | `postiz` | Social media posting/scheduling via Postiz API |
+| `mission-control` | Cross-context cockpit tools: workspaces, task board, propose/execute approval-gated actions; ships the canvas UI |
+| `memory-mcp` | MCP server exposing agent long-term memory (store/recall/search over Convex embeddings) |
 | `image-gen` | Image generation (Google Imagen 4 + DALL-E 3), persists to Convex + Drive |
 | `video-gen` | Video generation (Gemini Veo + Sora), persists to Convex + Drive |
 | `convex-knowledge` | RAG knowledge store + vector search |
@@ -83,12 +93,26 @@ OpenClaw tool plugins that extend the AI agent's capabilities.
 | `carousel-gen` | HTML→PNG carousel and comic brief generator |
 | `youtube-transcriber` | YouTube video transcript extraction |
 | `job-search` | Job listing search and tracking |
-| `hubspot` | HubSpot CRM integration |
-| `zoho` | Zoho CRM integration |
 | `web-tools` | Website crawling, PDF reading, file search |
-| `video-gen` | Video generation (Veo + Sora) |
 | `dynoclux` | Privacy enforcement (inbox scanning, unsubscribe) |
 | `dynosist` | Email assistant (Gmail drafts) |
+
+`hubspot` and `zoho` still exist under `plugins/` but were **retired in favour of
+`clarify-ai`** (PR #69): removed from `PLUGIN_REGISTRY`, disabled on the VM. Three CRMs
+meant the model had to choose between `hubspot_search_contacts`, `zoho_search_contacts`
+and `clarify_search` for one job. The directories stay until the disable has soaked.
+
+**Every plugin manifest must declare `contracts.tools`.** Since OpenClaw ~2026.6.1, a
+plugin whose `openclaw.plugin.json` omits it will load, report `enabled`, and register
+no tools at all — silently. Detect with `openclaw plugins doctor`; run it after every
+OpenClaw upgrade.
+
+```json
+{ "id": "convex-knowledge",
+  "activation": { "onStartup": true },
+  "contracts": { "tools": ["knowledge_search", "knowledge_store"] },
+  "configSchema": { ... } }
+```
 
 ### 6. Skills (`skills/`)
 
@@ -129,6 +153,24 @@ Cloud Run service that proxies browser requests to per-user GCP VMs via IAP-for-
 | Deploy | Auto-deploys via Cloud Build trigger on main branch changes to `services/tunnel-broker/**` |
 
 The broker eliminates the need for public IPs on user VMs. Browser-based tools (e.g., agent-browser) route through the broker, which authenticates via JWT and tunnels traffic to the target VM using IAP-for-TCP. The single-tenant invariant ensures cached assets are never served cross-tenant.
+
+### 8. Mission Control (`plugins/mission-control/`, `convex/missionControl.ts`)
+
+A cross-context cockpit that keeps the human in the driver's seat while agents work.
+
+| Concept | Table | Role |
+|---------|-------|------|
+| Workspace | `workspaces` | Named context (marketing, lead_management, book, other), optionally bound to an agent |
+| Task | `mcTasks` | Kanban card (backlog → todo → in_progress → blocked → done); `origin` records whether a human or agent created it |
+| Action | `mcActions` | Proposed side effect (post_publish, email_send, crm_update, image_generate, …) with a lifecycle: proposed → approved/rejected → running → done/failed |
+| Policy | `mcApprovalPolicy` | Per-workspace, per-action-type gate: `auto` (execute immediately) or `gated` (wait for approval) |
+| Activity | `mcActivity` | Append-only stream of messages, tool calls, reasoning, and system events |
+
+**Driver's-seat contract**: the agent never performs a side-effecting operation directly. It calls `mc_propose_action`, which writes an `mcActions` row. `mcApprovalPolicy` decides whether the action auto-runs or parks in the pending queue. The human approves or rejects from the canvas UI (served by the plugin at `/canvas/mission-control/`); only then does the agent call `startAction` → `completeAction`/`failAction`.
+
+### 9. Job Search Pipeline (`plugins/job-search/`, `convex/jobSearch.ts`)
+
+Five-table pipeline backing the `job-hunter`, `job-scout`, `company-intel`, and `network-scan` skills: `targetCompanies` → `jobListings` → `jobContacts` → `jobOutreach`, with `jobResumes` for tailored resume variants and `jobActivityLog` for audit.
 
 ---
 
@@ -202,6 +244,18 @@ The broker eliminates the need for public IPs on user VMs. Browser-based tools (
 
 ---
 
+### Action Approval Flow (Mission Control)
+
+1. Agent decides a side effect is needed → calls `mc_propose_action` with type, summary, payload.
+2. `missionControl:proposeAction` looks up `mcApprovalPolicy` for `(workspaceId, actionType)`.
+3. Gate `auto` → action is written as `approved` and the agent may execute immediately.
+4. Gate `gated` → action is written as `proposed` and appears in the canvas pending queue.
+5. Human calls `decideAction` (approve/reject) from the canvas.
+6. On approval the agent polls `approvedActions`, calls `startAction` (→ `running`), performs the work, then `completeAction` (→ `done`, with result) or `failAction` (→ `failed`, with error).
+7. Every step is mirrored into `mcActivity` via `logActivity`.
+
+---
+
 ## API Surface
 
 ### Dashboard API Routes
@@ -214,6 +268,11 @@ The broker eliminates the need for public IPs on user VMs. Browser-based tools (
 | `/api/gcp/status` | GET | Clerk + Google OAuth | VM status + metadata |
 | `/api/gcp/logs` | GET | Clerk + Google OAuth | Serial port output (startup logs) |
 | `/api/gcp/secrets` | POST | Clerk + Google OAuth | Create/update GCP secret |
+| `/api/gcp/update` | POST | Clerk + Google OAuth | Regenerate startup script at pinned version and hard-reset VM (OpenClaw upgrade) |
+| `/api/gcp/tunnel-token` | POST | Clerk + Google OAuth | Mint short-lived JWT for the tunnel broker |
+| `/api/openclaw-versions` | GET | Public | Recent stable `openclaw` versions from the npm registry (5-min cache) |
+| `/api/email/drafts` | GET/POST | Clerk | Gmail draft listing/creation for the dynosist flow |
+| `/api/webinar/seed` | POST | Clerk (admin) | Seed webinar slide content |
 | `/api/billing/create-checkout` | POST | Clerk | Create Stripe Checkout session |
 | `/api/billing/webhook` | POST | Public (Stripe signature) | Handle Stripe subscription events |
 | `/api/billing/create-portal` | POST | Clerk | Create Stripe Customer Portal session |
@@ -258,6 +317,33 @@ Written to `/root/.openclaw/openclaw.json` at boot:
 - `models.default`: User-selected primary model
 - `models.fallbacks`: User-selected fallback chain
 - `plugins`: Enabled plugins with config from GCP secrets
+
+### Model routing
+
+The reference deployment (`openclaw-vm`) routes everything through OpenRouter, so one
+credential reaches every provider and models can be swapped without touching config
+per-vendor:
+
+| Role | Model |
+|---|---|
+| primary | `openrouter/anthropic/claude-sonnet-5` |
+| fallbacks | `openrouter/google/gemini-3.8-flash` → `openrouter/openai/gpt-5.6-luna` |
+| `reasoning` alias | `openrouter/anthropic/claude-opus-5` |
+| `code` alias | `openrouter/anthropic/claude-sonnet-5` |
+| `fast` alias | `openrouter/google/gemini-3.8-flash` |
+| `cheap` alias | `openrouter/openai/gpt-5.6-luna` |
+
+Operational notes:
+
+- Provider plugins (`openrouter`, `ollama`, `lmstudio`) ship **with** OpenClaw but are
+  disabled *and* excluded from `plugins.allow`. Add to the allowlist first, or
+  `plugins enable openrouter` fails with "blocked by allowlist".
+- Set credentials **before** the model. The fallback chain is also OpenRouter, so an
+  unauthenticated provider fails every model at once, not just the primary.
+- Model ids move. Claude 4.x ids no longer resolve on OpenRouter; check the live list
+  (`https://openrouter.ai/api/v1/models`) rather than assuming a name still exists.
+- Local Ollama is impractical on the current `e2-medium` (3.8 GB RAM, no GPU) — roughly
+  1–3B quantized models only. Ollama Cloud or a resize would be required.
 
 ---
 

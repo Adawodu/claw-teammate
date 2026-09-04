@@ -267,3 +267,46 @@ sequenceDiagram
 
     API-->>Dashboard: Success (with warnings if partial failure)
 ```
+
+## Mission Control Action Approval Flow
+
+```mermaid
+sequenceDiagram
+    actor Human
+    participant Canvas as Mission Control Canvas
+    participant Agent as OpenClaw Agent
+    participant MC as convex/missionControl
+    participant Ext as External System
+
+    Agent->>MC: proposeAction(workspaceId, type, summary, payload)
+    MC->>MC: look up mcApprovalPolicy(workspaceId, type)
+
+    alt gate = auto
+        MC-->>Agent: action state = approved
+    else gate = gated
+        MC-->>Agent: action state = proposed
+        Canvas->>MC: pendingActions(workspaceId)
+        MC-->>Canvas: proposed actions
+        Human->>Canvas: approve / reject
+        Canvas->>MC: decideAction(actionId, decision)
+        MC->>MC: state = approved | rejected, record decidedBy/decidedAt
+    end
+
+    Agent->>MC: approvedActions(workspaceId)
+    MC-->>Agent: approved actions
+    Agent->>MC: startAction(actionId)
+    MC->>MC: state = running
+    Agent->>Ext: perform side effect
+
+    alt success
+        Ext-->>Agent: result
+        Agent->>MC: completeAction(actionId, result)
+        MC->>MC: state = done
+    else failure
+        Ext-->>Agent: error
+        Agent->>MC: failAction(actionId, error)
+        MC->>MC: state = failed
+    end
+
+    Agent->>MC: logActivity(workspaceId, kind, text, refActionId)
+```

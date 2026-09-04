@@ -56,12 +56,13 @@
 - Stores Google OAuth refresh tokens (used for GCP API access per user)
 
 ### Convex (Backend Database + Functions)
-- 13-table schema: users, deployments, subscriptions, plugins, skills, API keys, costs, media, knowledge, CMS, etc.
+- 34-table schema: users, deployments, subscriptions, plugin/skill configs, API keys, costs, media, knowledge, CMS, privacy enforcement, agent memory, webinar, job search, and Mission Control tables
 - Auth helpers (requireUser, requireAdmin, requireDeploymentOwner)
 - Subscription management (create trial, upsert from Stripe webhook)
 - Cost tracking (6-hourly cron fetches OpenRouter + OpenAI usage)
 - HTTP routes (cost dashboard, storage proxy)
-- Vector search (knowledge base with 1536-dim embeddings)
+- Vector search (knowledge base and agent memory with 1536-dim embeddings)
+- Mission Control: workspaces, task board, and the human-approval action queue backing the agent cockpit
 
 ### Stripe (Billing)
 - Subscription lifecycle (trial → active → canceled)
