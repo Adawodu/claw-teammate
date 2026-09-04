@@ -19,6 +19,7 @@ export const create = mutation({
     }),
     securityMode: v.optional(v.union(v.literal("secured"), v.literal("full-power"))),
     telegramUserId: v.optional(v.string()),
+    desiredOpenClawVersion: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireUser(ctx);
@@ -126,6 +127,24 @@ export const updateModels = mutation({
         primary: args.primary,
         fallbacks: args.fallbacks,
       },
+    });
+  },
+});
+
+export const updateDesiredVersion = mutation({
+  args: {
+    id: v.id("deployments"),
+    // null/undefined → "track latest from npm". A semver string → pin.
+    version: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireUser(ctx);
+    const deployment = await ctx.db.get(args.id);
+    if (!deployment || deployment.userId !== userId) {
+      throw new Error("Deployment not found");
+    }
+    await ctx.db.patch(args.id, {
+      desiredOpenClawVersion: args.version ?? undefined,
     });
   },
 });

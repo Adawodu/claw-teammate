@@ -9,7 +9,11 @@ export function generateWebStartupScript(config: {
   enabledSkills: string[];
   securityMode?: "secured" | "full-power";
   telegramUserId?: string;
+  // Pinned version of the openclaw npm package. Caller resolves "latest"
+  // upstream so the script bakes a concrete version.
+  openClawVersion?: string;
 }): string {
+  const openClawVersion = config.openClawVersion ?? OPENCLAW_VERSION;
   const isFullPower = config.securityMode === "full-power";
   const telegramId = config.telegramUserId?.trim();
   // Derive all secret names from the plugin registry + platform secrets
@@ -66,7 +70,7 @@ curl -sfL "${repoBase}/plugins/${p}/openclaw.plugin.json" -o "\${DEST}/openclaw.
   // Build the complete openclaw.json as a JSON string with bash ${VAR} placeholders.
   // The heredoc (without quotes) will expand these at runtime.
   const fullConfig = {
-    meta: { lastTouchedVersion: OPENCLAW_VERSION },
+    meta: { lastTouchedVersion: openClawVersion },
     agents: {
       defaults: {
         model: {
@@ -201,7 +205,7 @@ if [ ! -f "\${MARKER}" ]; then
   cp /root/.local/bin/uvx /usr/local/bin/uvx
 
   echo "==> Installing OpenClaw..."
-  npm install -g openclaw@${OPENCLAW_VERSION}
+  npm install -g openclaw@${openClawVersion}
 
   echo "==> Installing browser dependencies..."
   apt-get install -y chromium xvfb
@@ -231,7 +235,7 @@ fi
 
 # ── Upgrade OpenClaw if version differs ────────────────────────────
 # Extract just the version number from "OpenClaw X.Y.Z (hash)" → "X.Y.Z"
-DESIRED_VERSION="${OPENCLAW_VERSION}"
+DESIRED_VERSION="${openClawVersion}"
 CURRENT_VERSION="$(openclaw --version 2>/dev/null | awk '{print \$2}' || echo 'none')"
 if [ "\${CURRENT_VERSION}" != "\${DESIRED_VERSION}" ]; then
   echo "==> Upgrading OpenClaw \${CURRENT_VERSION} → \${DESIRED_VERSION}..."
@@ -407,6 +411,9 @@ ExecStartPre=-/usr/bin/env openclaw security audit
 ExecStart=/usr/bin/env openclaw gateway run --bind loopback
 Restart=always
 RestartSec=10
+# First boot of a new openclaw version installs plugin runtime deps via npm,
+# which can take 2-3 minutes on smaller machines. Default 90s is too tight.
+TimeoutStartSec=600
 
 [Install]
 WantedBy=multi-user.target
