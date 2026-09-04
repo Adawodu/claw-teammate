@@ -1,7 +1,7 @@
 // Fallback version used by the dashboard generator when the npm registry
 // is unreachable and no per-deployment pin is set. Also the version baked
 // into create-dynoclaw CLI templates. Keep current with latest stable.
-export const OPENCLAW_VERSION = "2026.4.25";
+export const OPENCLAW_VERSION = "2026.9.1";
 
 export type {
   DeployConfig,

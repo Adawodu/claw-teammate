@@ -104,7 +104,7 @@ if [ ! -f "${MARKER}" ]; then
   apt-get install -y nodejs
 
   echo "==> Installing OpenClaw..."
-  npm install -g openclaw@2026.4.8
+  npm install -g openclaw@2026.9.1
 
   mkdir -p "${OPENCLAW_DIR}"
   touch "${MARKER}"
@@ -128,7 +128,7 @@ if ! command -v agent-browser &>/dev/null; then
 fi
 
 # ── Upgrade OpenClaw if version differs ────────────────────────────
-DESIRED_VERSION="2026.4.8"
+DESIRED_VERSION="2026.9.1"
 CURRENT_VERSION="$(openclaw --version 2>/dev/null || echo 'none')"
 if [ "${CURRENT_VERSION}" != "${DESIRED_VERSION}" ]; then
   echo "==> Upgrading OpenClaw ${CURRENT_VERSION} → ${DESIRED_VERSION}..."
