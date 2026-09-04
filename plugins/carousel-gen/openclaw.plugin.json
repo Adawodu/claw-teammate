@@ -1,14 +1,34 @@
 {
   "id": "carousel-gen",
   "name": "Carousel Generator",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "generate_carousel",
+      "generate_comic_brief",
+      "set_reference_photo"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "convexUrl": { "type": "string" },
-      "driveFolderId": { "type": "string" },
-      "driveClientId": { "type": "string" },
-      "driveClientSecret": { "type": "string" },
-      "driveRefreshToken": { "type": "string" }
+      "convexUrl": {
+        "type": "string"
+      },
+      "driveFolderId": {
+        "type": "string"
+      },
+      "driveClientId": {
+        "type": "string"
+      },
+      "driveClientSecret": {
+        "type": "string"
+      },
+      "driveRefreshToken": {
+        "type": "string"
+      }
     }
   }
 }

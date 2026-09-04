@@ -1,13 +1,34 @@
 {
   "id": "dynosist",
   "name": "DynoSist Email Assistant",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "dynosist_create_draft",
+      "dynosist_find_files",
+      "dynosist_list_drafts",
+      "dynosist_search_emails"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "gmailClientId": { "type": "string" },
-      "gmailClientSecret": { "type": "string" },
-      "gmailRefreshToken": { "type": "string" }
+      "gmailClientId": {
+        "type": "string"
+      },
+      "gmailClientSecret": {
+        "type": "string"
+      },
+      "gmailRefreshToken": {
+        "type": "string"
+      }
     },
-    "required": ["gmailClientId", "gmailClientSecret", "gmailRefreshToken"]
+    "required": [
+      "gmailClientId",
+      "gmailClientSecret",
+      "gmailRefreshToken"
+    ]
   }
 }

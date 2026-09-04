@@ -1,12 +1,31 @@
 {
   "id": "postiz",
   "name": "Postiz Social Media",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "postiz_analytics",
+      "postiz_channels",
+      "postiz_create_post",
+      "postiz_delete_post",
+      "postiz_list_posts"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "postizUrl": { "type": "string" },
-      "postizApiKey": { "type": "string" }
+      "postizUrl": {
+        "type": "string"
+      },
+      "postizApiKey": {
+        "type": "string"
+      }
     },
-    "required": ["postizUrl", "postizApiKey"]
+    "required": [
+      "postizUrl",
+      "postizApiKey"
+    ]
   }
 }

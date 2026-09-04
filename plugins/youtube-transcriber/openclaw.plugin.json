@@ -1,6 +1,14 @@
 {
   "id": "youtube-transcriber",
   "name": "YouTube Transcriber",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "youtube_transcribe"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {},

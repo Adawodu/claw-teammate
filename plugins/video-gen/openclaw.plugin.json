@@ -1,12 +1,27 @@
 {
   "id": "video-gen",
   "name": "Video Generation",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "video_generate",
+      "video_status"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "geminiApiKey": { "type": "string" },
-      "openaiApiKey": { "type": "string" }
+      "geminiApiKey": {
+        "type": "string"
+      },
+      "openaiApiKey": {
+        "type": "string"
+      }
     },
-    "required": ["geminiApiKey"]
+    "required": [
+      "geminiApiKey"
+    ]
   }
 }

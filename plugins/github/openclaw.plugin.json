@@ -1,12 +1,34 @@
 {
   "id": "github",
   "name": "GitHub",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "github_commit_file",
+      "github_create_branch",
+      "github_create_pr",
+      "github_list_files",
+      "github_list_issues",
+      "github_list_prs",
+      "github_list_repos",
+      "github_read_file",
+      "github_search_code"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "githubToken": { "type": "string" },
-      "defaultOwner": { "type": "string" }
+      "githubToken": {
+        "type": "string"
+      },
+      "defaultOwner": {
+        "type": "string"
+      }
     },
-    "required": ["githubToken"]
+    "required": [
+      "githubToken"
+    ]
   }
 }

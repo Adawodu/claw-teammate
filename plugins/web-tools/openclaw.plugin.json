@@ -1,6 +1,16 @@
 {
   "id": "web-tools",
   "name": "Web Tools",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "crawl_website",
+      "find_files",
+      "read_pdf"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {},
