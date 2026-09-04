@@ -3,5 +3,6 @@
   "buildCommand": "npm run dashboard:build",
   "outputDirectory": "packages/dashboard/.next",
   "installCommand": "npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- packages/dashboard packages/shared convex package.json package-lock.json vercel.json"
 }
