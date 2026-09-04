@@ -28,6 +28,7 @@ import type * as lib_embeddings from "../lib/embeddings.js";
 import type * as marketingImages from "../marketingImages.js";
 import type * as media from "../media.js";
 import type * as mediaActions from "../mediaActions.js";
+import type * as missionControl from "../missionControl.js";
 import type * as navLinks from "../navLinks.js";
 import type * as pluginConfigs from "../pluginConfigs.js";
 import type * as pricingPlans from "../pricingPlans.js";
@@ -67,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   marketingImages: typeof marketingImages;
   media: typeof media;
   mediaActions: typeof mediaActions;
+  missionControl: typeof missionControl;
   navLinks: typeof navLinks;
   pluginConfigs: typeof pluginConfigs;
   pricingPlans: typeof pricingPlans;
