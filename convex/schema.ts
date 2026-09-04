@@ -80,6 +80,8 @@ export default defineSchema({
     }),
     securityMode: v.optional(v.union(v.literal("secured"), v.literal("full-power"))),
     telegramUserId: v.optional(v.string()),
+    // Pinned OpenClaw version. When unset, deploys/updates use the latest npm stable.
+    desiredOpenClawVersion: v.optional(v.string()),
     deployedAt: v.number(),
     lastHealthCheck: v.optional(v.number()),
     lastHealthStatus: v.optional(v.string()),

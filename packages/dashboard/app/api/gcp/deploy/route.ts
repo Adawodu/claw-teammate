@@ -13,6 +13,7 @@ import {
 } from "@/lib/gcp-rest";
 import { maskApiKey } from "@/lib/formatters";
 import { generateWebStartupScript } from "@/lib/startup-script";
+import { getLatestOpenClawVersion } from "@/lib/openclaw-versions";
 
 export const maxDuration = 60;
 
@@ -202,6 +203,13 @@ export async function POST(req: NextRequest) {
       .filter(([, v]) => v)
       .map(([k]) => k);
 
+    // Pinned version from request, else fall back to latest npm stable.
+    const requestedVersion =
+      typeof body.openClawVersion === "string" && body.openClawVersion.trim() !== ""
+        ? body.openClawVersion.trim()
+        : null;
+    const openClawVersion = requestedVersion ?? (await getLatestOpenClawVersion());
+
     const startupScript = generateWebStartupScript({
       gcpProjectId,
       apiKeys,
@@ -211,6 +219,7 @@ export async function POST(req: NextRequest) {
       enabledSkills,
       securityMode: body.securityMode ?? "secured",
       telegramUserId: body.telegramUserId ?? "",
+      openClawVersion,
     });
 
     // 7. Create VM
@@ -249,6 +258,9 @@ export async function POST(req: NextRequest) {
           },
           securityMode: body.securityMode ?? "secured",
           telegramUserId: body.telegramUserId ?? "",
+          // Only persist a pin if the user explicitly chose one. Empty/null
+          // leaves the field unset, meaning "track latest" on subsequent updates.
+          ...(requestedVersion ? { desiredOpenClawVersion: requestedVersion } : {}),
         });
 
         // Register API keys in Convex

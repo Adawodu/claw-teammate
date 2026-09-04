@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Play,
@@ -30,9 +30,12 @@ import {
   Info,
   ArrowUpCircle,
 } from "lucide-react";
-import { OPENCLAW_VERSION, PLUGIN_REGISTRY, SKILL_REGISTRY } from "@dynoclaw/shared";
+import { PLUGIN_REGISTRY, SKILL_REGISTRY } from "@dynoclaw/shared";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+
+// Sentinel value for the version selector meaning "no pin — track latest".
+const TRACK_LATEST = "";
 
 function RestartRequiredBanner() {
   return (
@@ -87,6 +90,12 @@ export default function SettingsPage() {
     type: "success" | "error";
     message: string;
   } | null>(null);
+  // OpenClaw version selector state. Empty `selectedVersion` means "track latest".
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
+  const [recentVersions, setRecentVersions] = useState<string[]>([]);
+  const [versionsLoadError, setVersionsLoadError] = useState<string | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<string>(TRACK_LATEST);
+  const [versionsLoaded, setVersionsLoaded] = useState(false);
 
   // Branding edit state
   const [editingBranding, setEditingBranding] = useState(false);
@@ -106,6 +115,38 @@ export default function SettingsPage() {
   const [newFallback, setNewFallback] = useState("");
   const [savingModels, setSavingModels] = useState(false);
   const [modelsSaved, setModelsSaved] = useState(false);
+
+  // Fetch available openclaw versions from the npm registry (server-cached).
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/openclaw-versions")
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return (await res.json()) as { latest: string; recent: string[] };
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setLatestVersion(data.latest);
+        setRecentVersions(data.recent);
+        setVersionsLoaded(true);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setVersionsLoadError(err instanceof Error ? err.message : "Failed to load versions");
+        setVersionsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Sync the selector with the deployment's saved pin once it loads.
+  useEffect(() => {
+    if (deployment) {
+      const pinned = (deployment as { desiredOpenClawVersion?: string }).desiredOpenClawVersion;
+      setSelectedVersion(pinned ?? TRACK_LATEST);
+    }
+  }, [deployment]);
 
   const refreshStatus = useCallback(async () => {
     if (!deployment) return;
@@ -185,16 +226,21 @@ export default function SettingsPage() {
     setUpgrading(true);
     setUpgradeResult(null);
     try {
+      // null = clear pin (track latest); string = pin to that version.
+      const versionPayload = selectedVersion === TRACK_LATEST ? null : selectedVersion;
       const res = await fetch("/api/gcp/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deploymentId: deployment._id }),
+        body: JSON.stringify({ deploymentId: deployment._id, version: versionPayload }),
       });
       const data = await res.json();
       if (res.ok) {
+        const installed = (data as { version?: string }).version;
         setUpgradeResult({
           type: "success",
-          message: "Upgrade initiated. VM is restarting with the new version.",
+          message: installed
+            ? `Upgrade initiated. VM is restarting on openclaw ${installed}.`
+            : "Upgrade initiated. VM is restarting with the new version.",
         });
         setTimeout(refreshStatus, 15000);
         setTimeout(refreshStatus, 60000);
@@ -212,7 +258,7 @@ export default function SettingsPage() {
     } finally {
       setUpgrading(false);
     }
-  }, [deployment, refreshStatus]);
+  }, [deployment, refreshStatus, selectedVersion]);
 
   const startEditBranding = useCallback(() => {
     if (!deployment) return;
@@ -409,12 +455,54 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Target Version</span>
-            <span className="font-mono">{OPENCLAW_VERSION}</span>
+            <span className="text-muted-foreground">Latest stable</span>
+            <span className="font-mono">
+              {versionsLoaded ? (latestVersion ?? "unavailable") : "…"}
+            </span>
           </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Pinned</span>
+            <span className="font-mono">
+              {selectedVersion === TRACK_LATEST ? (
+                <span className="text-muted-foreground">auto (latest)</span>
+              ) : (
+                selectedVersion
+              )}
+            </span>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground" htmlFor="openclaw-version-select">
+              Target version on next upgrade
+            </label>
+            <select
+              id="openclaw-version-select"
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm font-mono"
+              value={selectedVersion}
+              disabled={upgrading || !versionsLoaded}
+              onChange={(e) => setSelectedVersion(e.target.value)}
+            >
+              <option value={TRACK_LATEST}>
+                Auto (latest{latestVersion ? ` — ${latestVersion}` : ""})
+              </option>
+              {recentVersions.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+              {/* If a pinned version is no longer in the recent list, still show it. */}
+              {selectedVersion !== TRACK_LATEST && !recentVersions.includes(selectedVersion) && (
+                <option value={selectedVersion}>{selectedVersion} (pinned)</option>
+              )}
+            </select>
+          </div>
+          {versionsLoadError && (
+            <p className="text-xs text-amber-600">
+              Could not load version list ({versionsLoadError}). Will fall back to repo default.
+            </p>
+          )}
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              Upgrades OpenClaw and restarts your VM. Takes ~2 minutes.
+              Saves your choice and restarts the VM. Takes ~2 minutes.
             </p>
             <Button
               variant="outline"

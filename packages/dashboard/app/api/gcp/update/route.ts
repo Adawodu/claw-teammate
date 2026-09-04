@@ -5,11 +5,21 @@ import { Id } from "@convex/_generated/dataModel";
 import { getGcpTokenForProject } from "@/lib/gcp-auth";
 import { setInstanceMetadata, resetInstance } from "@/lib/gcp-rest";
 import { generateWebStartupScript } from "@/lib/startup-script";
+import { getLatestOpenClawVersion } from "@/lib/openclaw-versions";
 
 export async function POST(req: NextRequest) {
   const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-  const { deploymentId } = await req.json();
+  const body = await req.json();
+  const { deploymentId } = body as { deploymentId?: string };
+  // Optional: caller can override the desired version for this update.
+  // Empty string / null means "track latest from npm".
+  const requestedVersion =
+    typeof body?.version === "string" && body.version.trim() !== ""
+      ? body.version.trim()
+      : body?.version === null
+        ? null
+        : undefined;
   if (!deploymentId) {
     return NextResponse.json(
       { error: "deploymentId is required" },
@@ -62,6 +72,29 @@ export async function POST(req: NextRequest) {
     .map((s: { skillId: string }) => s.skillId);
 
   try {
+    // Resolve which openclaw version to bake into the startup script.
+    // Precedence: request body override > deployment.desiredOpenClawVersion > latest npm.
+    const pinnedFromDeployment = (deployment as Record<string, unknown>)
+      .desiredOpenClawVersion as string | undefined;
+    let resolvedVersion: string;
+    if (requestedVersion === null) {
+      resolvedVersion = await getLatestOpenClawVersion();
+    } else if (typeof requestedVersion === "string") {
+      resolvedVersion = requestedVersion;
+    } else if (pinnedFromDeployment) {
+      resolvedVersion = pinnedFromDeployment;
+    } else {
+      resolvedVersion = await getLatestOpenClawVersion();
+    }
+
+    // Persist the user-driven choice (only when the caller passed an explicit value).
+    if (requestedVersion !== undefined) {
+      await convex.mutation(api.deployments.updateDesiredVersion, {
+        id: deploymentId as Id<"deployments">,
+        version: requestedVersion,
+      });
+    }
+
     const startupScript = generateWebStartupScript({
       gcpProjectId: deployment.gcpProjectId,
       apiKeys: {},
@@ -70,6 +103,7 @@ export async function POST(req: NextRequest) {
       enabledPlugins,
       enabledSkills,
       securityMode: (deployment as Record<string, unknown>).securityMode as "secured" | "full-power" | undefined,
+      openClawVersion: resolvedVersion,
     });
 
     await setInstanceMetadata(
@@ -87,9 +121,36 @@ export async function POST(req: NextRequest) {
       deployment.vmName
     );
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, version: resolvedVersion });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
+
+    // setInstanceMetadata throws "Instance <name> not found" when the VM has
+    // been deleted out from under the deployment record. Flag the record so the
+    // UI can offer to remove or redeploy instead of failing the same way again.
+    if (/Instance .* not found/i.test(message)) {
+      try {
+        await convex.mutation(api.deployments.updateStatus, {
+          id: deploymentId as Id<"deployments">,
+          status: "missing",
+          error: `VM ${deployment.vmName} no longer exists in GCP project ${deployment.gcpProjectId}.`,
+          lastHealthCheck: Date.now(),
+          lastHealthStatus: "missing",
+        });
+      } catch {
+        // Best-effort flag; surface the original error regardless.
+      }
+      return NextResponse.json(
+        {
+          error: `VM ${deployment.vmName} no longer exists in GCP. Remove this deployment from the dashboard or redeploy a new VM.`,
+          code: "vm_missing",
+          vmName: deployment.vmName,
+          gcpProjectId: deployment.gcpProjectId,
+        },
+        { status: 404 }
+      );
+    }
+
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

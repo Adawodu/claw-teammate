@@ -9,7 +9,11 @@ export function generateWebStartupScript(config: {
   enabledSkills: string[];
   securityMode?: "secured" | "full-power";
   telegramUserId?: string;
+  // Pinned version of the openclaw npm package. Caller resolves "latest"
+  // upstream so the script bakes a concrete version.
+  openClawVersion?: string;
 }): string {
+  const openClawVersion = config.openClawVersion ?? OPENCLAW_VERSION;
   const isFullPower = config.securityMode === "full-power";
   const telegramId = config.telegramUserId?.trim();
   // Derive all secret names from the plugin registry + platform secrets
@@ -66,7 +70,7 @@ curl -sfL "${repoBase}/plugins/${p}/openclaw.plugin.json" -o "\${DEST}/openclaw.
   // Build the complete openclaw.json as a JSON string with bash ${VAR} placeholders.
   // The heredoc (without quotes) will expand these at runtime.
   const fullConfig = {
-    meta: { lastTouchedVersion: OPENCLAW_VERSION },
+    meta: { lastTouchedVersion: openClawVersion },
     agents: {
       defaults: {
         model: {
@@ -201,7 +205,7 @@ if [ ! -f "\${MARKER}" ]; then
   cp /root/.local/bin/uvx /usr/local/bin/uvx
 
   echo "==> Installing OpenClaw..."
-  npm install -g openclaw@${OPENCLAW_VERSION}
+  npm install -g openclaw@${openClawVersion}
 
   echo "==> Installing browser dependencies..."
   apt-get install -y chromium xvfb
@@ -231,13 +235,24 @@ fi
 
 # ── Upgrade OpenClaw if version differs ────────────────────────────
 # Extract just the version number from "OpenClaw X.Y.Z (hash)" → "X.Y.Z"
-DESIRED_VERSION="${OPENCLAW_VERSION}"
+DESIRED_VERSION="${openClawVersion}"
 CURRENT_VERSION="$(openclaw --version 2>/dev/null | awk '{print \$2}' || echo 'none')"
-if [ "\${CURRENT_VERSION}" != "\${DESIRED_VERSION}" ]; then
-  echo "==> Upgrading OpenClaw \${CURRENT_VERSION} → \${DESIRED_VERSION}..."
+# Only ever move FORWARD. The weekly openclaw-update.timer can install a
+# release newer than the one baked in here; without this guard every reboot
+# would drag the VM back to the baked version.
+if [ "\${CURRENT_VERSION}" = "none" ]; then
+  echo "==> Installing OpenClaw \${DESIRED_VERSION}..."
   npm install -g "openclaw@\${DESIRED_VERSION}"
-else
+elif [ "\${CURRENT_VERSION}" = "\${DESIRED_VERSION}" ]; then
   echo "==> OpenClaw already at \${DESIRED_VERSION}, skipping upgrade"
+else
+  NEWEST="$(printf '%s\\n%s\\n' "\${CURRENT_VERSION}" "\${DESIRED_VERSION}" | sort -V | tail -1)"
+  if [ "\${NEWEST}" = "\${DESIRED_VERSION}" ]; then
+    echo "==> Upgrading OpenClaw \${CURRENT_VERSION} → \${DESIRED_VERSION}..."
+    npm install -g "openclaw@\${DESIRED_VERSION}"
+  else
+    echo "==> Installed OpenClaw \${CURRENT_VERSION} is newer than \${DESIRED_VERSION}; keeping it"
+  fi
 fi
 
 # ── Resolve VM identity ───────────────────────────────────────────
@@ -407,6 +422,9 @@ ExecStartPre=-/usr/bin/env openclaw security audit
 ExecStart=/usr/bin/env openclaw gateway run --bind loopback
 Restart=always
 RestartSec=10
+# First boot of a new openclaw version installs plugin runtime deps via npm,
+# which can take 2-3 minutes on smaller machines. Default 90s is too tight.
+TimeoutStartSec=600
 
 [Install]
 WantedBy=multi-user.target
@@ -416,6 +434,38 @@ systemctl daemon-reload
 systemctl enable openclaw
 systemctl restart openclaw
 echo "==> OpenClaw gateway started"
+
+# ── Weekly OpenClaw auto-update ───────────────────────────────────
+# openclaw's own updater: pulls the latest stable from npm, syncs plugins,
+# and restarts the gateway. Paired with the never-downgrade check above.
+cat > /etc/systemd/system/openclaw-update.service <<'UPDUNIT'
+[Unit]
+Description=Update OpenClaw to the latest stable release
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/env openclaw update --yes --channel stable
+TimeoutStartSec=1800
+UPDUNIT
+
+cat > /etc/systemd/system/openclaw-update.timer <<'UPDTIMER'
+[Unit]
+Description=Weekly OpenClaw auto-update
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00 UTC
+Persistent=true
+RandomizedDelaySec=1800
+
+[Install]
+WantedBy=timers.target
+UPDTIMER
+
+systemctl daemon-reload
+systemctl enable --now openclaw-update.timer
+echo "==> Weekly OpenClaw auto-update enabled"
 
 # ── IAP-for-TCP DNAT rule ───────────────────────────────────────
 # OpenClaw binds to loopback only, but IAP-for-TCP arrives at the VM's internal IP.
