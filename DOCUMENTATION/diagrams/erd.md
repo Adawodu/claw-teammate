@@ -1,6 +1,6 @@
 # Entity Relationship Diagram
 
-## Convex Schema (13 Tables)
+## Convex Schema (34 Tables) — Core Platform
 
 ```mermaid
 erDiagram
@@ -200,3 +200,121 @@ erDiagram
 | cmsPages | `by_slug` | slug | Page lookup |
 | navLinks | `by_section` | section | Section filtering |
 | navLinks | `by_visible` | visible | Visibility filtering |
+
+## Mission Control
+
+```mermaid
+erDiagram
+    users ||--o{ workspaces : owns
+    workspaces ||--o{ mcTasks : contains
+    workspaces ||--o{ mcActions : queues
+    workspaces ||--o{ mcApprovalPolicy : governs
+    workspaces ||--o{ mcActivity : streams
+    mcTasks ||--o{ mcActions : "spawns"
+    mcActions ||--o{ mcActivity : "referenced by"
+
+    workspaces {
+        id _id PK
+        string userId FK
+        string slug UK
+        string name
+        string kind "marketing | lead_management | book | other"
+        string agent "main | growth | ..."
+        boolean archived
+        number sortOrder
+    }
+
+    mcTasks {
+        id _id PK
+        id workspaceId FK
+        string title
+        string detail
+        string status "backlog | todo | in_progress | blocked | done"
+        number priority "0=low .. 3=urgent"
+        number order
+        string origin "human | agent"
+        string assignedAgent
+        number dueAt
+    }
+
+    mcActions {
+        id _id PK
+        id workspaceId FK
+        id taskId FK "optional"
+        string type "post_publish | email_send | crm_update | ..."
+        string summary
+        any payload
+        string state "proposed | approved | rejected | running | done | failed"
+        string gate "auto | gated"
+        string proposedByAgent
+        string decidedBy
+        number decidedAt
+        any result
+        string error
+    }
+
+    mcApprovalPolicy {
+        id _id PK
+        id workspaceId FK
+        string actionType
+        string gate "auto | gated"
+        number updatedAt
+    }
+
+    mcActivity {
+        id _id PK
+        id workspaceId FK
+        string kind "message | tool | reasoning | system"
+        string text
+        string agent
+        id refActionId FK
+        id refTaskId FK
+        number createdAt
+    }
+```
+
+## Job Search Pipeline
+
+```mermaid
+erDiagram
+    targetCompanies ||--o{ jobListings : posts
+    targetCompanies ||--o{ jobContacts : employs
+    jobListings ||--o{ jobOutreach : "targeted by"
+    jobContacts ||--o{ jobOutreach : "addressed to"
+    jobResumes ||--o{ jobOutreach : attaches
+    jobListings ||--o{ jobActivityLog : logs
+```
+
+## Agent Memory
+
+```mermaid
+erDiagram
+    agentSessions ||--o{ agentMemory : records
+    agentMemory {
+        id _id PK
+        string content
+        number[] embedding "1536-dim vector index"
+        string sessionId FK
+    }
+```
+
+## Additional Table Groups
+
+| Group | Tables |
+|-------|--------|
+| Privacy enforcement (dynoclux) | `inboxScans`, `privacyRequests`, `privacyViolations`, `actionQueue` |
+| Marketing / CMS | `cmsPages`, `navLinks`, `marketingImages`, `pricingPlans`, `webinarSlides`, `webinarLeads` |
+| Commerce | `subscriptions`, `serviceOrders` |
+| Agent memory | `agentMemory`, `agentSessions` |
+| Mission Control | `workspaces`, `mcTasks`, `mcActions`, `mcApprovalPolicy`, `mcActivity` |
+| Job search | `targetCompanies`, `jobListings`, `jobContacts`, `jobOutreach`, `jobResumes`, `jobActivityLog` |
+
+### Mission Control Indexes
+
+| Table | Index | Fields |
+|-------|-------|--------|
+| workspaces | `by_slug` / `by_userId` | slug / userId |
+| mcTasks | `by_workspace` / `by_workspace_status` | workspaceId / workspaceId, status |
+| mcActions | `by_workspace` / `by_workspace_state` / `by_state` | workspaceId / workspaceId, state / state |
+| mcApprovalPolicy | `by_workspace` / `by_workspace_type` | workspaceId / workspaceId, actionType |
+| mcActivity | `by_workspace_createdAt` | workspaceId, createdAt |
