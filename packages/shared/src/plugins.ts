@@ -237,53 +237,6 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     ],
   },
   {
-    id: "hubspot",
-    name: "HubSpot CRM",
-    description: "Manage contacts, deals, companies, and pipelines in HubSpot CRM",
-    requiredKeys: [
-      {
-        key: "hubspotApiKey",
-        secretName: "hubspot-api-key",
-        description: "HubSpot private app token",
-        signupUrl: "https://developers.hubspot.com",
-      },
-    ],
-    optionalKeys: [],
-  },
-  {
-    id: "zoho",
-    name: "Zoho CRM",
-    description: "Manage contacts, deals, accounts, and pipelines in Zoho CRM",
-    requiredKeys: [
-      {
-        key: "zohoClientId",
-        secretName: "zoho-client-id",
-        description: "Zoho OAuth client ID",
-        signupUrl: "https://api-console.zoho.com",
-      },
-      {
-        key: "zohoClientSecret",
-        secretName: "zoho-client-secret",
-        description: "Zoho OAuth client secret",
-        signupUrl: "https://api-console.zoho.com",
-      },
-      {
-        key: "zohoRefreshToken",
-        secretName: "zoho-refresh-token",
-        description: "Zoho OAuth refresh token",
-        signupUrl: "https://api-console.zoho.com",
-      },
-    ],
-    optionalKeys: [
-      {
-        key: "zohoDataCenter",
-        secretName: "zoho-data-center",
-        description: "Zoho data center region (default: com)",
-        signupUrl: "https://api-console.zoho.com",
-      },
-    ],
-  },
-  {
     id: "video-gen",
     name: "Video Generation",
     description: "Generate videos using Gemini Veo with persistent storage",
