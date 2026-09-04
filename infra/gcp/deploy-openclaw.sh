@@ -132,9 +132,20 @@ DESIRED_VERSION="2026.9.1"
 # "openclaw --version" prints "OpenClaw X.Y.Z (hash)" - take field 2 only,
 # otherwise this never matches DESIRED_VERSION and reinstalls on every boot.
 CURRENT_VERSION="$(openclaw --version 2>/dev/null | awk '{print $2}' || echo 'none')"
-if [ "${CURRENT_VERSION}" != "${DESIRED_VERSION}" ]; then
-  echo "==> Upgrading OpenClaw ${CURRENT_VERSION} → ${DESIRED_VERSION}..."
+# Only ever move FORWARD. The weekly openclaw-update.timer can install a
+# release newer than the one pinned here; without this guard every reboot
+# would drag the VM back to the pinned version.
+if [ "${CURRENT_VERSION}" = "none" ]; then
+  echo "==> Installing OpenClaw ${DESIRED_VERSION}..."
   npm install -g "openclaw@${DESIRED_VERSION}"
+elif [ "${CURRENT_VERSION}" != "${DESIRED_VERSION}" ]; then
+  NEWEST="$(printf '%s\n%s\n' "${CURRENT_VERSION}" "${DESIRED_VERSION}" | sort -V | tail -1)"
+  if [ "${NEWEST}" = "${DESIRED_VERSION}" ]; then
+    echo "==> Upgrading OpenClaw ${CURRENT_VERSION} → ${DESIRED_VERSION}..."
+    npm install -g "openclaw@${DESIRED_VERSION}"
+  else
+    echo "==> Installed OpenClaw ${CURRENT_VERSION} is newer than ${DESIRED_VERSION}; keeping it"
+  fi
 fi
 
 # ── Fetch secrets ─────────────────────────────────────────────────
@@ -214,6 +225,35 @@ UNIT
 systemctl daemon-reload
 systemctl enable openclaw
 systemctl restart openclaw
+
+# ── Weekly OpenClaw auto-update ───────────────────────────────────
+cat > /etc/systemd/system/openclaw-update.service <<'UPDUNIT'
+[Unit]
+Description=Update OpenClaw to the latest stable release
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/env openclaw update --yes --channel stable
+TimeoutStartSec=1800
+UPDUNIT
+
+cat > /etc/systemd/system/openclaw-update.timer <<'UPDTIMER'
+[Unit]
+Description=Weekly OpenClaw auto-update
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00 UTC
+Persistent=true
+RandomizedDelaySec=1800
+
+[Install]
+WantedBy=timers.target
+UPDTIMER
+
+systemctl daemon-reload
+systemctl enable --now openclaw-update.timer
 echo "==> OpenClaw gateway started"
 STARTUP_EOF
 

@@ -237,11 +237,22 @@ fi
 # Extract just the version number from "OpenClaw X.Y.Z (hash)" → "X.Y.Z"
 DESIRED_VERSION="${openClawVersion}"
 CURRENT_VERSION="$(openclaw --version 2>/dev/null | awk '{print \$2}' || echo 'none')"
-if [ "\${CURRENT_VERSION}" != "\${DESIRED_VERSION}" ]; then
-  echo "==> Upgrading OpenClaw \${CURRENT_VERSION} → \${DESIRED_VERSION}..."
+# Only ever move FORWARD. The weekly openclaw-update.timer can install a
+# release newer than the one baked in here; without this guard every reboot
+# would drag the VM back to the baked version.
+if [ "\${CURRENT_VERSION}" = "none" ]; then
+  echo "==> Installing OpenClaw \${DESIRED_VERSION}..."
   npm install -g "openclaw@\${DESIRED_VERSION}"
-else
+elif [ "\${CURRENT_VERSION}" = "\${DESIRED_VERSION}" ]; then
   echo "==> OpenClaw already at \${DESIRED_VERSION}, skipping upgrade"
+else
+  NEWEST="$(printf '%s\\n%s\\n' "\${CURRENT_VERSION}" "\${DESIRED_VERSION}" | sort -V | tail -1)"
+  if [ "\${NEWEST}" = "\${DESIRED_VERSION}" ]; then
+    echo "==> Upgrading OpenClaw \${CURRENT_VERSION} → \${DESIRED_VERSION}..."
+    npm install -g "openclaw@\${DESIRED_VERSION}"
+  else
+    echo "==> Installed OpenClaw \${CURRENT_VERSION} is newer than \${DESIRED_VERSION}; keeping it"
+  fi
 fi
 
 # ── Resolve VM identity ───────────────────────────────────────────
@@ -423,6 +434,38 @@ systemctl daemon-reload
 systemctl enable openclaw
 systemctl restart openclaw
 echo "==> OpenClaw gateway started"
+
+# ── Weekly OpenClaw auto-update ───────────────────────────────────
+# openclaw's own updater: pulls the latest stable from npm, syncs plugins,
+# and restarts the gateway. Paired with the never-downgrade check above.
+cat > /etc/systemd/system/openclaw-update.service <<'UPDUNIT'
+[Unit]
+Description=Update OpenClaw to the latest stable release
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/env openclaw update --yes --channel stable
+TimeoutStartSec=1800
+UPDUNIT
+
+cat > /etc/systemd/system/openclaw-update.timer <<'UPDTIMER'
+[Unit]
+Description=Weekly OpenClaw auto-update
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00 UTC
+Persistent=true
+RandomizedDelaySec=1800
+
+[Install]
+WantedBy=timers.target
+UPDTIMER
+
+systemctl daemon-reload
+systemctl enable --now openclaw-update.timer
+echo "==> Weekly OpenClaw auto-update enabled"
 
 # ── IAP-for-TCP DNAT rule ───────────────────────────────────────
 # OpenClaw binds to loopback only, but IAP-for-TCP arrives at the VM's internal IP.
