@@ -124,6 +124,10 @@
   .act-btn.archive:hover:not(:disabled) { background: #1e40af; }
 
   .stale-banner { background: #422006; border: 1px solid #78350f; border-radius: 8px; padding: 0.6rem 1rem; margin-bottom: 1rem; font-size: 0.82rem; color: #fbbf24; }
+  .violation-banner { background: #450a0a; border: 1px solid #7f1d1d; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; color: #fca5a5; display: flex; justify-content: space-between; align-items: center; }
+  .queue-process-btn { padding: 0.3rem 0.8rem; font-size: 0.72rem; font-weight: 600; border-radius: 4px; cursor: pointer; border: 1px solid #1e40af; background: #172554; color: #93c5fd; transition: all 0.15s; }
+  .queue-process-btn:hover { background: #1e3a8a; }
+  .copy-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #22c55e; color: #052e16; padding: 0.5rem 1.2rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   .act-group { display: flex; gap: 0.3rem; flex-wrap: wrap; }
 
   .queue-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid #1a1a1a; font-size: 0.78rem; }
@@ -218,6 +222,7 @@
     <div id="violations-section"></div>
   </div>
 
+  <div id="copy-toast" class="copy-toast">Copied! Send this to Jonnymate in Telegram</div>
   <p class="refresh-note">Last updated: <span id="updated">—</span></p>
 
 <script>
@@ -602,6 +607,14 @@ function renderViolations(violations) {
 
 let queueExpanded = false;
 
+function copyCmd(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.getElementById("copy-toast");
+    toast.style.opacity = "1";
+    setTimeout(() => { toast.style.opacity = "0"; }, 2000);
+  });
+}
+
 function renderQueue(items) {
   const el = document.getElementById("queue-section");
   if (!items || items.length === 0) {
@@ -642,6 +655,7 @@ function renderQueue(items) {
     <h2 class="section-title">Action Queue</h2>
     <div class="queue-summary">
       ${parts.join('<span style="color:#333">&middot;</span>')}
+      ${active.length > 0 ? `<button class="queue-process-btn" id="queue-process-btn">Process ${active.length} pending</button>` : ""}
       ${hasCompleted ? `<button class="queue-toggle" id="queue-toggle-btn">${toggleLabel}</button>` : ""}
       ${hasCompleted ? `<button class="queue-clear" id="queue-clear-btn">Clear completed</button>` : ""}
     </div>
@@ -649,6 +663,11 @@ function renderQueue(items) {
       ${rows}
     </div>` : ""}`;
 
+  if (active.length > 0) {
+    document.getElementById("queue-process-btn").addEventListener("click", () => {
+      copyCmd("/dynoclux process the action queue");
+    });
+  }
   if (hasCompleted) {
     document.getElementById("queue-toggle-btn").addEventListener("click", () => {
       queueExpanded = !queueExpanded;
@@ -707,7 +726,17 @@ async function refresh() {
       alertsHtml += `<div class="stale-banner">Scan data is ${hoursOld}h old. Re-scan via Telegram: <code>/dynoclux scan</code></div>`;
     }
     if (stats.overdueCount > 0) {
-      alertsHtml += `<div class="alert-bar">${stats.overdueCount} request(s) are past their compliance deadline.</div>`;
+      alertsHtml += `<div class="violation-banner">
+        <span>${stats.overdueCount} request(s) past compliance deadline — check for violations</span>
+        <button class="queue-process-btn" onclick="copyCmd('/dynoclux check for violations')">Check Now</button>
+      </div>`;
+    }
+    const pendingActions = (queue || []).filter(q => q.status === "pending").length;
+    if (pendingActions > 0) {
+      alertsHtml += `<div class="stale-banner" style="display:flex;justify-content:space-between;align-items:center">
+        <span>${pendingActions} action(s) queued and waiting to be processed</span>
+        <button class="queue-process-btn" onclick="copyCmd('/dynoclux process the action queue')">Process Queue</button>
+      </div>`;
     }
     alertsEl.innerHTML = alertsHtml;
 
