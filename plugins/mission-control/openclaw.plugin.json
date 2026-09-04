@@ -1,11 +1,30 @@
 {
   "id": "mission-control",
   "name": "Mission Control",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "mc_approved_actions",
+      "mc_complete_action",
+      "mc_create_task",
+      "mc_fail_action",
+      "mc_log_activity",
+      "mc_propose_action",
+      "mc_update_task",
+      "mc_workspaces"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "convexUrl": { "type": "string" }
+      "convexUrl": {
+        "type": "string"
+      }
     },
-    "required": ["convexUrl"]
+    "required": [
+      "convexUrl"
+    ]
   }
 }
