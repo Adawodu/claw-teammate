@@ -570,4 +570,114 @@ export default defineSchema({
     .index("by_companyId", ["companyId"])
     .index("by_userId", ["userId"])
     .index("by_createdAt", ["createdAt"]),
+
+  // ── Mission Control (cross-context cockpit) ───────────────────────
+  // Generalizes the dynoclux canvas pattern (canvas → Convex → agent
+  // action queue → human approval) into workspaces/tasks/actions.
+  // Single-user (jonnymate) today; userId optional so multi-tenant is a
+  // later filter, not a rewrite. Cognitive Stack mapping:
+  //   workspaces = Synapse · mcTasks = Maru ·
+  //   mcActions + mcApprovalPolicy = Nzube (the driver's seat) ·
+  //   mcActivity = CFP.
+
+  workspaces: defineTable({
+    userId: v.optional(v.string()),
+    slug: v.string(),
+    name: v.string(),
+    kind: v.union(
+      v.literal("marketing"),
+      v.literal("lead_management"),
+      v.literal("book"),
+      v.literal("other"),
+    ),
+    emoji: v.optional(v.string()),
+    description: v.optional(v.string()),
+    agent: v.optional(v.string()), // "main" | "growth" (GrowthClaw) | ...
+    archived: v.boolean(),
+    sortOrder: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_userId", ["userId"]),
+
+  mcTasks: defineTable({
+    userId: v.optional(v.string()),
+    workspaceId: v.id("workspaces"),
+    title: v.string(),
+    detail: v.optional(v.string()),
+    status: v.union(
+      v.literal("backlog"),
+      v.literal("todo"),
+      v.literal("in_progress"),
+      v.literal("blocked"),
+      v.literal("done"),
+    ),
+    priority: v.optional(v.number()), // 0=low .. 3=urgent
+    order: v.number(),
+    origin: v.union(v.literal("human"), v.literal("agent")),
+    assignedAgent: v.optional(v.string()),
+    dueAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_status", ["workspaceId", "status"]),
+
+  // The approval queue — the heart of "stay in the driver's seat".
+  mcActions: defineTable({
+    userId: v.optional(v.string()),
+    workspaceId: v.id("workspaces"),
+    taskId: v.optional(v.id("mcTasks")),
+    type: v.string(), // "post_publish" | "email_send" | "crm_update" | "image_generate" | ...
+    summary: v.string(),
+    payload: v.optional(v.any()),
+    state: v.union(
+      v.literal("proposed"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("running"),
+      v.literal("done"),
+      v.literal("failed"),
+    ),
+    gate: v.union(v.literal("auto"), v.literal("gated")),
+    proposedByAgent: v.optional(v.string()),
+    decidedBy: v.optional(v.string()),
+    decidedAt: v.optional(v.number()),
+    result: v.optional(v.any()),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_state", ["workspaceId", "state"])
+    .index("by_state", ["state"]),
+
+  // Per-workspace, per-action-type: auto-run or require approval.
+  mcApprovalPolicy: defineTable({
+    userId: v.optional(v.string()),
+    workspaceId: v.id("workspaces"),
+    actionType: v.string(),
+    gate: v.union(v.literal("auto"), v.literal("gated")),
+    updatedAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_workspace_type", ["workspaceId", "actionType"]),
+
+  mcActivity: defineTable({
+    userId: v.optional(v.string()),
+    workspaceId: v.id("workspaces"),
+    kind: v.union(
+      v.literal("message"),
+      v.literal("tool"),
+      v.literal("reasoning"),
+      v.literal("system"),
+    ),
+    text: v.string(),
+    agent: v.optional(v.string()),
+    refActionId: v.optional(v.id("mcActions")),
+    refTaskId: v.optional(v.id("mcTasks")),
+    createdAt: v.number(),
+  })
+    .index("by_workspace_createdAt", ["workspaceId", "createdAt"]),
 });

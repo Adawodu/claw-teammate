@@ -499,6 +499,32 @@ install_carousel_gen_plugin() {
         sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
 }
 
+install_mission_control_plugin() {
+  local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/mission-control"
+  local PLUGIN_DEST="/root/.openclaw/extensions/mission-control"
+
+  echo "==> Installing Mission Control plugin files..."
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo mkdir -p ${PLUGIN_DEST}/canvas && mkdir -p /tmp/mission-control-plugin/canvas"
+  gcloud compute scp \
+    "${PLUGIN_SRC}/package.json" \
+    "${PLUGIN_SRC}/index.ts" \
+    "${PLUGIN_SRC}/openclaw.plugin.json" \
+    "${VM_NAME}:/tmp/mission-control-plugin/" \
+    --zone="${ZONE}" --project="${PROJECT}"
+  # The canvas is a separate SCP step because gcloud scp does not recurse.
+  gcloud compute scp \
+    "${PLUGIN_SRC}/canvas/index.html" \
+    "${VM_NAME}:/tmp/mission-control-plugin/canvas/" \
+    --zone="${ZONE}" --project="${PROJECT}"
+  gcloud compute ssh "${VM_NAME}" \
+    --zone="${ZONE}" --project="${PROJECT}" \
+    -- "sudo cp /tmp/mission-control-plugin/*.json /tmp/mission-control-plugin/*.ts ${PLUGIN_DEST}/ && \
+        sudo cp /tmp/mission-control-plugin/canvas/* ${PLUGIN_DEST}/canvas/ && \
+        sudo bash -c 'cd ${PLUGIN_DEST} && npm install --omit=dev'"
+}
+
 install_agentmail_plugin() {
   local PLUGIN_SRC="${SCRIPT_DIR}/../../plugins/agentmail"
   local PLUGIN_DEST="/root/.openclaw/extensions/agentmail"
@@ -578,10 +604,11 @@ config.plugins.entries = Object.assign(config.plugins.entries || {}, {
   "twitter-research": { enabled: true, config: { bearerToken: process.env.TWITTER_BEARER_TOKEN || undefined } },
   "youtube-transcriber": { enabled: true, config: {} },
   "carousel-gen": { enabled: true, config: { convexUrl: process.env.CONVEX_URL || undefined, driveFolderId: process.env.DRIVE_FOLDER_ID || undefined, driveClientId: process.env.DRIVE_CLIENT_ID || undefined, driveClientSecret: process.env.DRIVE_CLIENT_SECRET || undefined, driveRefreshToken: process.env.DRIVE_REFRESH_TOKEN || undefined } },
-  "agentmail": { enabled: true, config: { agentmailApiKey: process.env.AGENTMAIL_API_KEY, inboxId: "jonnymate@agentmail.to" } }
+  "agentmail": { enabled: true, config: { agentmailApiKey: process.env.AGENTMAIL_API_KEY, inboxId: "jonnymate@agentmail.to" } },
+  "mission-control": { enabled: true, config: { convexUrl: process.env.CONVEX_URL } }
 });
 // Ensure all plugins are in the allowlist
-const allPlugins = ["postiz", "convex-knowledge", "image-gen", "video-gen", "beehiiv", "telegram", "twitter-research", "github", "dynoclux", "dynosist", "web-tools", "youtube-transcriber", "carousel-gen", "agentmail"];
+const allPlugins = ["postiz", "convex-knowledge", "image-gen", "video-gen", "beehiiv", "telegram", "twitter-research", "github", "dynoclux", "dynosist", "web-tools", "youtube-transcriber", "carousel-gen", "agentmail", "mission-control"];
 config.plugins.allow = config.plugins.allow || [];
 for (const p of allPlugins) { if (!config.plugins.allow.includes(p)) config.plugins.allow.push(p); }
 // Configure QMD memory backend
@@ -712,6 +739,7 @@ install_twitter_research_plugin
 install_youtube_transcriber_plugin
 install_carousel_gen_plugin
 install_agentmail_plugin
+install_mission_control_plugin
 configure_all_plugins
 install_skills
 init_qmd_memory

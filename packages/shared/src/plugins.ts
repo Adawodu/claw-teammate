@@ -58,6 +58,20 @@ export const PLUGIN_REGISTRY: PluginMeta[] = [
     optionalKeys: [],
   },
   {
+    id: "mission-control",
+    name: "Mission Control",
+    description: "Cross-context cockpit: task board + human-approval action queue with a canvas dashboard",
+    requiredKeys: [
+      {
+        key: "convexUrl",
+        secretName: "convex-url",
+        description: "Convex deployment URL",
+        signupUrl: "https://convex.dev",
+      },
+    ],
+    optionalKeys: [],
+  },
+  {
     id: "beehiiv",
     name: "Beehiiv Newsletter",
     description: "Draft and manage newsletter content via Beehiiv",

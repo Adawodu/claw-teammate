@@ -49,6 +49,11 @@ mkdir -p "\${DEST}"
 curl -sfL "${repoBase}/plugins/${p}/package.json" -o "\${DEST}/package.json" 2>/dev/null || rm -f "\${DEST}/package.json"
 curl -sfL "${repoBase}/plugins/${p}/index.ts" -o "\${DEST}/index.ts" 2>/dev/null || rm -f "\${DEST}/index.ts"
 curl -sfL "${repoBase}/plugins/${p}/openclaw.plugin.json" -o "\${DEST}/openclaw.plugin.json" 2>/dev/null || rm -f "\${DEST}/openclaw.plugin.json"
+# Optional canvas dashboard. OpenClaw serves \${DEST}/canvas/ at /canvas/${p}/.
+# Downloaded to a temp file first so a 404 leaves no empty canvas/ behind.
+if curl -sfL "${repoBase}/plugins/${p}/canvas/index.html" -o /tmp/${p}-canvas.html 2>/dev/null; then
+  mkdir -p "\${DEST}/canvas" && mv /tmp/${p}-canvas.html "\${DEST}/canvas/index.html"
+fi
 # Remove plugin dir if manifest is missing (download failed)
 [ -f "\${DEST}/openclaw.plugin.json" ] && cd "\${DEST}" && npm install --omit=dev 2>/dev/null || rm -rf "\${DEST}"`
     )
