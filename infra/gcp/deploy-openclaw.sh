@@ -129,7 +129,9 @@ fi
 
 # ── Upgrade OpenClaw if version differs ────────────────────────────
 DESIRED_VERSION="2026.9.1"
-CURRENT_VERSION="$(openclaw --version 2>/dev/null || echo 'none')"
+# "openclaw --version" prints "OpenClaw X.Y.Z (hash)" - take field 2 only,
+# otherwise this never matches DESIRED_VERSION and reinstalls on every boot.
+CURRENT_VERSION="$(openclaw --version 2>/dev/null | awk '{print $2}' || echo 'none')"
 if [ "${CURRENT_VERSION}" != "${DESIRED_VERSION}" ]; then
   echo "==> Upgrading OpenClaw ${CURRENT_VERSION} → ${DESIRED_VERSION}..."
   npm install -g "openclaw@${DESIRED_VERSION}"
