@@ -1,11 +1,24 @@
 {
   "id": "convex-knowledge",
   "name": "Convex Knowledge Base",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "knowledge_search",
+      "knowledge_store"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "convexUrl": { "type": "string" }
+      "convexUrl": {
+        "type": "string"
+      }
     },
-    "required": ["convexUrl"]
+    "required": [
+      "convexUrl"
+    ]
   }
 }

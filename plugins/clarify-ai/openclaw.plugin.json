@@ -1,12 +1,32 @@
 {
   "id": "clarify-ai",
   "name": "Clarify.ai CRM",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "clarify_create_contact",
+      "clarify_find_leads",
+      "clarify_get_meetings",
+      "clarify_manage_deal",
+      "clarify_search",
+      "clarify_update_record"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "clarifyApiKey": { "type": "string" },
-      "clarifyWorkspaceSlug": { "type": "string" }
+      "clarifyApiKey": {
+        "type": "string"
+      },
+      "clarifyWorkspaceSlug": {
+        "type": "string"
+      }
     },
-    "required": ["clarifyApiKey", "clarifyWorkspaceSlug"]
+    "required": [
+      "clarifyApiKey",
+      "clarifyWorkspaceSlug"
+    ]
   }
 }

@@ -1,12 +1,29 @@
 {
   "id": "beehiiv",
   "name": "Beehiiv Newsletter",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "beehiiv_create_draft",
+      "beehiiv_get_post",
+      "beehiiv_list_posts"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "beehiivApiKey": { "type": "string" },
-      "beehiivPublicationId": { "type": "string" }
+      "beehiivApiKey": {
+        "type": "string"
+      },
+      "beehiivPublicationId": {
+        "type": "string"
+      }
     },
-    "required": ["beehiivApiKey", "beehiivPublicationId"]
+    "required": [
+      "beehiivApiKey",
+      "beehiivPublicationId"
+    ]
   }
 }

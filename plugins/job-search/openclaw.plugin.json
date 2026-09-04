@@ -1,11 +1,32 @@
 {
   "id": "job-search",
   "name": "Job Search Pipeline",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "job_search_add_contact",
+      "job_search_add_job",
+      "job_search_draft_email",
+      "job_search_draft_outreach",
+      "job_search_guess_email",
+      "job_search_list_contacts",
+      "job_search_list_jobs",
+      "job_search_save_company",
+      "job_search_stats",
+      "job_search_update_status"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "convexUrl": { "type": "string" }
+      "convexUrl": {
+        "type": "string"
+      }
     },
-    "required": ["convexUrl"]
+    "required": [
+      "convexUrl"
+    ]
   }
 }

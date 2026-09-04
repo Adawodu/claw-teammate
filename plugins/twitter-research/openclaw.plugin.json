@@ -1,11 +1,27 @@
 {
   "id": "twitter-research",
   "name": "Twitter/X Research",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "twitter_count",
+      "twitter_search",
+      "twitter_trending",
+      "twitter_user",
+      "twitter_user_tweets"
+    ]
+  },
   "configSchema": {
     "type": "object",
     "properties": {
-      "bearerToken": { "type": "string" }
+      "bearerToken": {
+        "type": "string"
+      }
     },
-    "required": ["bearerToken"]
+    "required": [
+      "bearerToken"
+    ]
   }
 }
